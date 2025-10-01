@@ -41,6 +41,11 @@ const upload = multer({
     limits: { fileSize: 50 * 1024 * 1024 } // 50MB 제한
 });
 
+// 루트 경로 라우트 - index.html 서빙
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
+
 // API 라우트
 
 // 모든 챕터 데이터 가져오기
