@@ -5,9 +5,10 @@ const fs = require('fs');
 const path = require('path');
 const multer = require('multer');
 const cors = require('cors');
+const supabase = require('./supabase');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 const DATA_DIR = __dirname;
 const DATA_FILE = path.join(DATA_DIR, 'data.json');
 const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
@@ -18,88 +19,99 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.static(__dirname));
 app.use('/uploads', express.static(UPLOADS_DIR));
 
-// uploads 폴더가 없으면 생성
+// uploads 폴더가 없으면 생성 (로컬 백업용)
 if (!fs.existsSync(UPLOADS_DIR)) {
     fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 }
 
-// 파일 업로드 설정
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, UPLOADS_DIR);
-    },
-    filename: function (req, file, cb) {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, uniqueSuffix + '-' + Buffer.from(file.originalname, 'latin1').toString('utf8'));
-    }
+// 파일 업로드 설정 - 메모리 저장 (Supabase Storage 업로드용)
+const storage = multer.memoryStorage();
+const upload = multer({ 
+    storage: storage,
+    limits: { fileSize: 50 * 1024 * 1024 } // 50MB 제한
 });
-
-const upload = multer({ storage: storage });
-
-// 데이터 파일 초기화
-function initDataFile() {
-    if (!fs.existsSync(DATA_FILE)) {
-        const initialData = {
-            chapters: {}
-        };
-        fs.writeFileSync(DATA_FILE, JSON.stringify(initialData, null, 2), 'utf8');
-    }
-}
-
-// 데이터 읽기
-function readData() {
-    try {
-        const data = fs.readFileSync(DATA_FILE, 'utf8');
-        return JSON.parse(data);
-    } catch (error) {
-        console.error('데이터 읽기 오류:', error);
-        return { chapters: {} };
-    }
-}
-
-// 데이터 쓰기
-function writeData(data) {
-    try {
-        fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf8');
-        return true;
-    } catch (error) {
-        console.error('데이터 쓰기 오류:', error);
-        return false;
-    }
-}
 
 // API 라우트
 
 // 모든 챕터 데이터 가져오기
-app.get('/api/chapters', (req, res) => {
-    const data = readData();
-    res.json(data.chapters);
+app.get('/api/chapters', async (req, res) => {
+    try {
+        const { data, error } = await supabase
+            .from('chapters')
+            .select('*')
+            .order('updated_at', { ascending: false });
+        
+        if (error) throw error;
+        
+        // 데이터 형식을 기존 형식으로 변환 (id를 키로 사용)
+        const chapters = {};
+        data.forEach(chapter => {
+            chapters[chapter.id] = {
+                content: chapter.content,
+                attachments: chapter.attachments,
+                updatedAt: chapter.updated_at
+            };
+        });
+        
+        res.json(chapters);
+    } catch (error) {
+        console.error('챕터 조회 오류:', error);
+        res.status(500).json({ error: '챕터 조회 실패' });
+    }
 });
 
 // 특정 챕터 데이터 가져오기
-app.get('/api/chapters/:id', (req, res) => {
-    const data = readData();
-    const chapter = data.chapters[req.params.id];
-    if (chapter) {
-        res.json(chapter);
-    } else {
-        res.json({ content: '', attachments: [] });
+app.get('/api/chapters/:id', async (req, res) => {
+    try {
+        const { data, error } = await supabase
+            .from('chapters')
+            .select('*')
+            .eq('id', req.params.id)
+            .single();
+        
+        if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+            throw error;
+        }
+        
+        if (data) {
+            res.json({
+                content: data.content,
+                attachments: data.attachments,
+                updatedAt: data.updated_at
+            });
+        } else {
+            res.json({ content: '', attachments: [] });
+        }
+    } catch (error) {
+        console.error('챕터 조회 오류:', error);
+        res.status(500).json({ error: '챕터 조회 실패' });
     }
 });
 
 // 챕터 데이터 저장
-app.post('/api/chapters/:id', (req, res) => {
-    const data = readData();
-    data.chapters[req.params.id] = {
-        content: req.body.content || '',
-        attachments: req.body.attachments || [],
-        updatedAt: new Date().toISOString()
-    };
-    
-    if (writeData(data)) {
+app.post('/api/chapters/:id', async (req, res) => {
+    try {
+        const chapterId = req.params.id;
+        const { content, attachments } = req.body;
+        
+        // upsert: 존재하면 업데이트, 없으면 삽입
+        const { data, error } = await supabase
+            .from('chapters')
+            .upsert({
+                id: chapterId,
+                content: content || '',
+                attachments: attachments || []
+            }, {
+                onConflict: 'id'
+            })
+            .select();
+        
+        if (error) throw error;
+        
         res.json({ success: true, message: '저장되었습니다.' });
-    } else {
-        res.status(500).json({ success: false, message: '저장 실패' });
+    } catch (error) {
+        console.error('챕터 저장 오류:', error);
+        res.status(500).json({ success: false, message: '저장 실패', error: error.message });
     }
 });
 
@@ -250,23 +262,59 @@ HTML 형식으로 위와 같은 구조로 답변해주세요.`;
     }
 });
 
-// 파일 업로드
-app.post('/api/upload', upload.single('file'), (req, res) => {
-    if (!req.file) {
-        return res.status(400).json({ success: false, message: '파일이 없습니다.' });
+// 파일 업로드 (Supabase Storage)
+app.post('/api/upload', upload.single('file'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ success: false, message: '파일이 없습니다.' });
+        }
+        
+        const originalname = Buffer.from(req.file.originalname, 'latin1').toString('utf8');
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const filename = uniqueSuffix + '-' + originalname;
+        
+        // Supabase Storage에 업로드
+        const { data, error } = await supabase.storage
+            .from('book-attachments')
+            .upload(filename, req.file.buffer, {
+                contentType: req.file.mimetype,
+                upsert: false
+            });
+        
+        if (error) {
+            console.error('Supabase Storage 업로드 오류:', error);
+            throw error;
+        }
+        
+        // 공개 URL 생성
+        const { data: publicUrlData } = supabase.storage
+            .from('book-attachments')
+            .getPublicUrl(filename);
+        
+        // 로컬 백업 (선택사항)
+        const localPath = path.join(UPLOADS_DIR, filename);
+        fs.writeFileSync(localPath, req.file.buffer);
+        
+        res.json({
+            success: true,
+            filename: filename,
+            originalname: originalname,
+            path: publicUrlData.publicUrl, // Supabase 공개 URL
+            localPath: `/uploads/${filename}` // 로컬 백업 경로
+        });
+    } catch (error) {
+        console.error('파일 업로드 오류:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: '파일 업로드 실패',
+            error: error.message 
+        });
     }
-    
-    res.json({
-        success: true,
-        filename: req.file.filename,
-        originalname: Buffer.from(req.file.originalname, 'latin1').toString('utf8'),
-        path: `/uploads/${req.file.filename}`
-    });
 });
 
 // 서버 시작
-initDataFile();
 app.listen(PORT, () => {
-    console.log(`서버가 http://localhost:${PORT} 에서 실행 중입니다.`);
-    console.log(`브라우저에서 http://localhost:${PORT}/index.html 을 열어주세요.`);
+    console.log(`✅ 서버가 http://localhost:${PORT} 에서 실행 중입니다.`);
+    console.log(`🌐 브라우저에서 http://localhost:${PORT}/index.html 을 열어주세요.`);
+    console.log(`📦 Supabase 연결: ${process.env.SUPABASE_URL ? '성공' : '실패'}`);
 });
