@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>제목 편집 기능 테스트</title>
+    <style>
+        body {
+            font-family: 'Malgun Gothic', sans-serif;
+            padding: 40px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 30px 0;
+            padding: 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+        }
+        .test-section h2 {
+            color: #667eea;
+            margin-top: 0;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px;
+        }
+        .btn-primary {
+            background: #4CAF50;
+            color: white;
+        }
+        .btn-secondary {
+            background: #2196F3;
+            color: white;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 5px;
+            min-height: 100px;
+        }
+        .success { color: #4CAF50; font-weight: 600; }
+        .error { color: #f44336; font-weight: 600; }
+    </style>
+    <!-- TOC Manager 로드 -->
+    <script src="toc-manager.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 제목 편집 기능 테스트</h1>
+        <p>toc-manager.js의 기능을 테스트합니다.</p>
+
+        <!-- 테스트 1: 제목 가져오기 -->
+        <div class="test-section">
+            <h2>Test 1: 제목 가져오기 (모든 레벨)</h2>
+            <p>챕터 ID: <input type="text" id="testChapterId" value="p1" style="padding: 5px;"></p>
+            <div style="margin: 10px 0;">
+                <button class="btn btn-secondary" onclick="document.getElementById('testChapterId').value='prologue'; testGetTitle();">1단계: prologue</button>
+                <button class="btn btn-secondary" onclick="document.getElementById('testChapterId').value='part1'; testGetTitle();">1단계: part1</button>
+                <button class="btn btn-secondary" onclick="document.getElementById('testChapterId').value='1-1'; testGetTitle();">2단계: 1-1</button>
+                <button class="btn btn-secondary" onclick="document.getElementById('testChapterId').value='1-1-1'; testGetTitle();">3단계: 1-1-1</button>
+            </div>
+            <button class="btn btn-primary" onclick="testGetTitle()">제목 가져오기</button>
+            <div id="test1Result" style="margin-top: 10px;"></div>
+        </div>
+
+        <!-- 테스트 2: 제목 뷰 모드 HTML 생성 -->
+        <div class="test-section">
+            <h2>Test 2: 뷰 모드 제목 HTML</h2>
+            <button class="btn btn-primary" onclick="testViewHTML()">뷰 모드 HTML 생성</button>
+            <div id="test2Result" style="margin-top: 10px;"></div>
+        </div>
+
+        <!-- 테스트 3: 편집 모드 제목 HTML 생성 -->
+        <div class="test-section">
+            <h2>Test 3: 편집 모드 제목 HTML</h2>
+            <button class="btn btn-primary" onclick="testEditorHTML()">편집 모드 HTML 생성</button>
+            <div id="test3Result" style="margin-top: 10px;"></div>
+        </div>
+
+        <!-- 테스트 4: 제목 업데이트 -->
+        <div class="test-section">
+            <h2>Test 4: 제목 업데이트 (모든 레벨)</h2>
+            <p>챕터 ID: <input type="text" id="updateChapterId" value="p1" style="padding: 5px;"></p>
+            <div style="margin: 10px 0;">
+                <button class="btn btn-secondary" onclick="document.getElementById('updateChapterId').value='prologue';">1단계: prologue</button>
+                <button class="btn btn-secondary" onclick="document.getElementById('updateChapterId').value='part1';">1단계: part1</button>
+                <button class="btn btn-secondary" onclick="document.getElementById('updateChapterId').value='1-1';">2단계: 1-1</button>
+                <button class="btn btn-secondary" onclick="document.getElementById('updateChapterId').value='1-1-1';">3단계: 1-1-1</button>
+            </div>
+            <p>새 제목: <input type="text" id="newTitle" value="테스트 제목 변경" style="padding: 5px; width: 300px;"></p>
+            <button class="btn btn-primary" onclick="testUpdateTitle()">제목 업데이트</button>
+            <button class="btn btn-secondary" onclick="testSaveToLocalStorage()">localStorage 저장</button>
+            <div id="test4Result" style="margin-top: 10px;"></div>
+        </div>
+
+        <!-- 전체 결과 -->
+        <div id="result"></div>
+    </div>
+
+    <script>
+        // 테스트용 목차 데이터 (3단계 구조)
+        window.tableOfContents = {
+            "prologue": {
+                title: "프롤로그: 인류의 숙명, 예측에 대한 갈망",
+                children: {
+                    "p1": { title: "왜 우리는 예측하려 하는가?" },
+                    "p2": { title: "예측의 본능: 생존과 번영을 위한 인류의 역사" },
+                    "p3": { title: "예측이 성공했을 때의 보상" }
+                }
+            },
+            "part1": {
+                title: "제1부. '역사주'의 근간: 음양오행, 변화하는 에너지",
+                children: {
+                    "1-1": {
+                        title: "무극에서 음양으로: 모든 것의 시작",
+                        children: {
+                            "1-1-1": { title: "무극의 상태와 시간의 발생" },
+                            "1-1-2": { title: "에너지와 시간: 아인슈타인의 방정식으로 본 관계" }
+                        }
+                    },
+                    "1-2": {
+                        title: "고정적이지 않은 오행: 불변하지 않고 변화하며 상대적인 오행"
+                    }
+                }
+            }
+        };
+
+        // 현재 챕터 ID (전역 변수)
+        window.currentChapterId = 'p1';
+
+        function log(message, type = 'info') {
+            const result = document.getElementById('result');
+            const span = document.createElement('div');
+            span.className = type;
+            span.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            result.appendChild(span);
+        }
+
+        function testGetTitle() {
+            const chapterId = document.getElementById('testChapterId').value;
+            const title = window.TOCManager.getChapterTitle(chapterId);
+            const resultDiv = document.getElementById('test1Result');
+            
+            if (title) {
+                resultDiv.innerHTML = `<span class="success">✅ 제목: "${title}"</span>`;
+                log(`제목 가져오기 성공: ${chapterId} -> "${title}"`, 'success');
+            } else {
+                resultDiv.innerHTML = `<span class="error">❌ 제목을 찾을 수 없습니다.</span>`;
+                log(`제목 가져오기 실패: ${chapterId}`, 'error');
+            }
+        }
+
+        function testViewHTML() {
+            const chapterId = document.getElementById('testChapterId').value;
+            const html = window.TOCManager.createTitleViewHTML(chapterId);
+            const resultDiv = document.getElementById('test2Result');
+            
+            resultDiv.innerHTML = html;
+            log('뷰 모드 HTML 생성 완료', 'success');
+        }
+
+        function testEditorHTML() {
+            const chapterId = document.getElementById('testChapterId').value;
+            const html = window.TOCManager.createTitleEditorHTML(chapterId);
+            const resultDiv = document.getElementById('test3Result');
+            
+            resultDiv.innerHTML = html;
+            log('편집 모드 HTML 생성 완료', 'success');
+        }
+
+        function testUpdateTitle() {
+            const chapterId = document.getElementById('updateChapterId').value;
+            const newTitle = document.getElementById('newTitle').value;
+            const success = window.TOCManager.updateChapterTitle(chapterId, newTitle);
+            const resultDiv = document.getElementById('test4Result');
+            
+            if (success) {
+                resultDiv.innerHTML = `<span class="success">✅ 제목 업데이트 성공!</span>`;
+                log(`제목 업데이트: ${chapterId} -> "${newTitle}"`, 'success');
+                
+                // 확인을 위해 다시 가져오기
+                const updatedTitle = window.TOCManager.getChapterTitle(chapterId);
+                log(`현재 제목 확인: "${updatedTitle}"`, 'info');
+            } else {
+                resultDiv.innerHTML = `<span class="error">❌ 제목 업데이트 실패</span>`;
+                log(`제목 업데이트 실패: ${chapterId}`, 'error');
+            }
+        }
+
+        function testSaveToLocalStorage() {
+            window.TOCManager.saveTOCToLocalStorage();
+            log('localStorage에 저장 완료', 'success');
+            
+            // 저장된 데이터 확인
+            const saved = localStorage.getItem('tableOfContents');
+            log(`저장된 데이터 크기: ${saved ? saved.length : 0} bytes`, 'info');
+        }
+
+        // 페이지 로드 시
+        window.addEventListener('DOMContentLoaded', () => {
+            log('테스트 페이지 로드 완료', 'success');
+            log(`TOCManager 사용 가능: ${window.TOCManager ? 'Yes' : 'No'}`, 'info');
+        });
+    </script>
+</body>
+</html>
