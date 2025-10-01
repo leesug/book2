@@ -13,6 +13,16 @@ const DATA_DIR = __dirname;
 const DATA_FILE = path.join(DATA_DIR, 'data.json');
 const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
 
+// 환경변수 확인 및 로깅
+console.log('🔍 환경변수 체크:');
+console.log('- PORT:', PORT);
+console.log('- SUPABASE_URL:', process.env.SUPABASE_URL ? '✅ 설정됨' : '❌ 없음');
+console.log('- SUPABASE_KEY:', process.env.SUPABASE_KEY ? '✅ 설정됨' : '❌ 없음');
+console.log('- ANTHROPIC_API_KEY:', process.env.ANTHROPIC_API_KEY ? '✅ 설정됨' : '❌ 없음');
+
+// API 키가 설정되어 있는지 확인
+const hasAnthropicKey = !!(process.env.ANTHROPIC_API_KEY && process.env.ANTHROPIC_API_KEY.trim().length > 0);
+
 // 미들웨어 설정
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
@@ -117,6 +127,16 @@ app.post('/api/chapters/:id', async (req, res) => {
 
 // AI 가이드 생성 API
 app.post('/api/generate-guide', async (req, res) => {
+    // API 키가 없으면 즉시 에러 반환
+    if (!hasAnthropicKey) {
+        console.error('❌ ANTHROPIC_API_KEY 환경변수가 설정되지 않았습니다.');
+        return res.status(400).json({ 
+            success: false, 
+            message: 'API 키가 설정되지 않았습니다. 환경변수 ANTHROPIC_API_KEY를 확인해주세요.',
+            needsApiKey: true
+        });
+    }
+
     const { title, existingContent, bookContext, tableOfContents, currentChapterId } = req.body;
 
     let prompt = '';
@@ -314,7 +334,13 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
 
 // 서버 시작
 app.listen(PORT, () => {
-    console.log(`✅ 서버가 http://localhost:${PORT} 에서 실행 중입니다.`);
+    console.log(`\n✅ 서버가 http://localhost:${PORT} 에서 실행 중입니다.`);
     console.log(`🌐 브라우저에서 http://localhost:${PORT}/index.html 을 열어주세요.`);
-    console.log(`📦 Supabase 연결: ${process.env.SUPABASE_URL ? '성공' : '실패'}`);
+    console.log(`📦 Supabase 연결: ${process.env.SUPABASE_URL ? '✅ 성공' : '❌ 실패'}`);
+    console.log(`🤖 AI 가이드 기능: ${hasAnthropicKey ? '✅ 활성화' : '❌ 비활성화 (API 키 필요)'}`);
+    if (!hasAnthropicKey) {
+        console.log(`⚠️  AI 가이드 기능을 사용하려면 ANTHROPIC_API_KEY 환경변수를 설정하세요.`);
+        console.log(`   자세한 내용: API_KEY_SETUP.md 파일 참고`);
+    }
+    console.log('');
 });
