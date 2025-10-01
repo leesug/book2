@@ -1,0 +1,272 @@
+require('dotenv').config();
+
+const express = require('express');
+const fs = require('fs');
+const path = require('path');
+const multer = require('multer');
+const cors = require('cors');
+
+const app = express();
+const PORT = 3000;
+const DATA_DIR = __dirname;
+const DATA_FILE = path.join(DATA_DIR, 'data.json');
+const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
+
+// 미들웨어 설정
+app.use(cors());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.static(__dirname));
+app.use('/uploads', express.static(UPLOADS_DIR));
+
+// uploads 폴더가 없으면 생성
+if (!fs.existsSync(UPLOADS_DIR)) {
+    fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+}
+
+// 파일 업로드 설정
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, UPLOADS_DIR);
+    },
+    filename: function (req, file, cb) {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, uniqueSuffix + '-' + Buffer.from(file.originalname, 'latin1').toString('utf8'));
+    }
+});
+
+const upload = multer({ storage: storage });
+
+// 데이터 파일 초기화
+function initDataFile() {
+    if (!fs.existsSync(DATA_FILE)) {
+        const initialData = {
+            chapters: {}
+        };
+        fs.writeFileSync(DATA_FILE, JSON.stringify(initialData, null, 2), 'utf8');
+    }
+}
+
+// 데이터 읽기
+function readData() {
+    try {
+        const data = fs.readFileSync(DATA_FILE, 'utf8');
+        return JSON.parse(data);
+    } catch (error) {
+        console.error('데이터 읽기 오류:', error);
+        return { chapters: {} };
+    }
+}
+
+// 데이터 쓰기
+function writeData(data) {
+    try {
+        fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf8');
+        return true;
+    } catch (error) {
+        console.error('데이터 쓰기 오류:', error);
+        return false;
+    }
+}
+
+// API 라우트
+
+// 모든 챕터 데이터 가져오기
+app.get('/api/chapters', (req, res) => {
+    const data = readData();
+    res.json(data.chapters);
+});
+
+// 특정 챕터 데이터 가져오기
+app.get('/api/chapters/:id', (req, res) => {
+    const data = readData();
+    const chapter = data.chapters[req.params.id];
+    if (chapter) {
+        res.json(chapter);
+    } else {
+        res.json({ content: '', attachments: [] });
+    }
+});
+
+// 챕터 데이터 저장
+app.post('/api/chapters/:id', (req, res) => {
+    const data = readData();
+    data.chapters[req.params.id] = {
+        content: req.body.content || '',
+        attachments: req.body.attachments || [],
+        updatedAt: new Date().toISOString()
+    };
+    
+    if (writeData(data)) {
+        res.json({ success: true, message: '저장되었습니다.' });
+    } else {
+        res.status(500).json({ success: false, message: '저장 실패' });
+    }
+});
+
+// AI 가이드 생성 API
+app.post('/api/generate-guide', async (req, res) => {
+    const { title, existingContent, bookContext, tableOfContents, currentChapterId } = req.body;
+
+    let prompt = '';
+    
+    // 전체 목차 정보를 텍스트로 변환
+    const tocText = tableOfContents ? `\n전체 도서 목차 구조:\n${tableOfContents}\n` : '';
+    
+    if (existingContent && existingContent.trim().length > 0) {
+        // 내용이 있는 경우: 내용 분석 및 보충/수정 제안
+        prompt = `당신은 전문 작가의 집필 코치입니다. 비문학 도서의 한 챕터 내용을 검토하고 개선 방향을 제시해주세요.
+
+${bookContext}
+${tocText}
+
+현재 작성 중인 챕터: "${title}"
+
+이미 작성된 내용:
+${existingContent}
+
+위 내용을 분석하여 다음을 제시해주세요:
+
+<h4>✅ 현재 내용의 강점</h4>
+<ul>
+<li>잘 작성된 부분과 그 이유를 구체적으로 설명</li>
+</ul>
+
+<h4>📝 보충이 필요한 내용</h4>
+<ul>
+<li>추가하면 좋을 구체적인 내용이나 예시</li>
+<li>독자 이해를 돕기 위한 설명</li>
+</ul>
+
+<h4>🔧 수정이 필요한 부분</h4>
+<ul>
+<li>개선이 필요한 문장이나 구조</li>
+<li>논리적 흐름의 문제점</li>
+</ul>
+
+<h4>🔗 전후 맥락 연결</h4>
+<ul>
+<li>이전 챕터와의 자연스러운 연결 방법</li>
+<li>다음 챕터로의 매끄러운 전환 제안</li>
+</ul>
+
+<h4>💡 독자 공감 포인트</h4>
+<ul>
+<li>독자가 더 공감할 수 있도록 추가할 요소</li>
+</ul>
+
+HTML 형식으로 위와 같은 구조로 답변해주세요.`;
+    } else {
+        // 내용이 없는 경우: 목차와 제목 기반 가이드
+        prompt = `당신은 전문 작가의 집필 코치입니다. 비문학 도서의 특정 챕터를 작성하기 위한 가이드를 제공해주세요.
+
+${bookContext}
+${tocText}
+
+현재 작성할 챕터: "${title}"
+
+이 챕터는 아직 작성되지 않았습니다. 전체 목차의 맥락을 고려하여 다음 구조로 글쓰기 가이드를 제시해주세요:
+
+<h4>📌 이 챕터의 목적과 배경</h4>
+<ul>
+<li>이 챕터가 전체 도서에서 담당하는 역할</li>
+<li>독자가 이 챕터를 통해 얻어야 할 핵심 정보</li>
+</ul>
+
+<h4>💡 다루어야 할 핵심 개념</h4>
+<ul>
+<li>반드시 설명해야 할 주요 개념과 이론</li>
+<li>각 개념의 중요도와 설명 순서</li>
+</ul>
+
+<h4>📝 구체적인 작성 방향</h4>
+<ul>
+<li>독자가 이해하기 쉬운 구체적인 예시나 비유</li>
+<li>실제 사례나 적용 방법</li>
+<li>도표, 그림 등이 필요한 부분</li>
+</ul>
+
+<h4>🔗 전후 챕터와의 연결</h4>
+<ul>
+<li>이전 챕터에서 이어지는 내용</li>
+<li>다음 챕터로 자연스럽게 이어지는 방법</li>
+</ul>
+
+<h4>❤️ 독자 공감 전략</h4>
+<ul>
+<li>타겟 독자(45-60세, 25-30세)가 공감할 수 있는 포인트</li>
+<li>실생활과 연결할 수 있는 부분</li>
+</ul>
+
+<h4>✍️ 추천 작성 분량</h4>
+<ul>
+<li>이 챕터의 적정 분량과 구성 제안</li>
+</ul>
+
+HTML 형식으로 위와 같은 구조로 답변해주세요.`;
+    }
+
+    try {
+        const response = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': process.env.ANTHROPIC_API_KEY || '',
+                'anthropic-version': '2023-06-01'
+            },
+            body: JSON.stringify({
+                model: 'claude-sonnet-4-20250514',
+                max_tokens: 2500,
+                messages: [{
+                    role: 'user',
+                    content: prompt
+                }]
+            })
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('API Error:', errorText);
+            return res.status(500).json({ 
+                success: false, 
+                message: 'AI 가이드 생성에 실패했습니다.',
+                error: errorText
+            });
+        }
+
+        const data = await response.json();
+        
+        if (data.content && data.content[0] && data.content[0].text) {
+            res.json({ success: true, guide: data.content[0].text });
+        } else {
+            res.status(500).json({ success: false, message: '가이드 생성 실패' });
+        }
+    } catch (error) {
+        console.error('Guide generation error:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'AI 가이드 생성 중 오류가 발생했습니다.',
+            error: error.message
+        });
+    }
+});
+
+// 파일 업로드
+app.post('/api/upload', upload.single('file'), (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({ success: false, message: '파일이 없습니다.' });
+    }
+    
+    res.json({
+        success: true,
+        filename: req.file.filename,
+        originalname: Buffer.from(req.file.originalname, 'latin1').toString('utf8'),
+        path: `/uploads/${req.file.filename}`
+    });
+});
+
+// 서버 시작
+initDataFile();
+app.listen(PORT, () => {
+    console.log(`서버가 http://localhost:${PORT} 에서 실행 중입니다.`);
+    console.log(`브라우저에서 http://localhost:${PORT}/index.html 을 열어주세요.`);
+});

@@ -1,0 +1,26 @@
+{
+  "name": "book-writing-system",
+  "version": "1.0.0",
+  "description": "자유의지 예측 집필 시스템",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": "22.14.0"  // Node 버전 명시
+  },
+  "keywords": [
+    "book",
+    "writing",
+    "editor"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.58.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^4.18.2",
+    "multer": "^1.4.5-lts.1"
+  }
+}
