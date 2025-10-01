@@ -19,3 +19,7 @@ Thumbs.db
 .idea/
 node_modules/ 
 .env 
+
+
+# Work notes (개인 작업 노트)
+work.md
