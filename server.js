@@ -243,6 +243,7 @@ HTML 형식으로 위와 같은 구조로 답변해주세요.`;
     }
 
     try {
+        console.log('📤 Anthropic API 호출 시작...');
         const response = await fetch('https://api.anthropic.com/v1/messages', {
             method: 'POST',
             headers: {
@@ -260,13 +261,18 @@ HTML 형식으로 위와 같은 구조로 답변해주세요.`;
             })
         });
 
+        console.log('📥 API 응답 상태:', response.status, response.statusText);
+
         if (!response.ok) {
             const errorText = await response.text();
-            console.error('API Error:', errorText);
+            console.error('❌ Anthropic API Error:');
+            console.error('Status:', response.status);
+            console.error('Error:', errorText);
             return res.status(500).json({ 
                 success: false, 
-                message: 'AI 가이드 생성에 실패했습니다.',
-                error: errorText
+                message: `API 오류 (${response.status}): ${errorText}`,
+                error: errorText,
+                statusCode: response.status
             });
         }
 
