@@ -667,6 +667,133 @@
                 opacity: 1;
             }
         }
+
+
+        /* ========== Phase 2: 목차 관리 모드 스타일 ========== */
+        .toc-manage-btn {
+            width: 100%;
+            padding: 10px 15px;
+            margin-bottom: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .toc-manage-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .toc-manage-btn.active {
+            background: linear-gradient(135deg, #f44336 0%, #e91e63 100%);
+        }
+
+        /* 목차 항목 액션 버튼들 */
+        .toc-actions {
+            display: none;
+            align-items: center;
+            gap: 4px;
+            margin-left: 8px;
+        }
+
+        .toc-manage-mode .toc-actions {
+            display: flex;
+        }
+
+        .toc-action-btn {
+            width: 24px;
+            height: 24px;
+            padding: 0;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .toc-action-btn:hover {
+            background: #f0f0f0;
+            transform: scale(1.1);
+        }
+
+        .toc-action-btn.up:hover { background: #e3f2fd; border-color: #2196F3; }
+        .toc-action-btn.down:hover { background: #e3f2fd; border-color: #2196F3; }
+        .toc-action-btn.left:hover { background: #fff3e0; border-color: #FF9800; }
+        .toc-action-btn.right:hover { background: #fff3e0; border-color: #FF9800; }
+        .toc-action-btn.edit:hover { background: #e8f5e9; border-color: #4CAF50; }
+        .toc-action-btn.delete:hover { background: #ffebee; border-color: #f44336; }
+        .toc-action-btn.add:hover { background: #e8f5e9; border-color: #4CAF50; }
+
+        /* 새 챕터 추가 영역 */
+        .add-chapter-area {
+            display: none;
+            background: #f9f9f9;
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+
+        .toc-manage-mode .add-chapter-area {
+            display: block;
+        }
+
+        .add-chapter-input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .add-chapter-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .add-chapter-buttons button {
+            flex: 1;
+            padding: 8px;
+            border: none;
+            border-radius: 5px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .add-chapter-buttons .btn-add {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .add-chapter-buttons .btn-add:hover {
+            background: #45a049;
+        }
+
+        .add-chapter-buttons .btn-cancel {
+            background: #f0f0f0;
+            color: #666;
+        }
+
+        .add-chapter-buttons .btn-cancel:hover {
+            background: #e0e0e0;
+        }
+
     </style>
     <!-- 목차 관리 시스템 -->
     <script src="toc-manager.js"></script>
@@ -697,6 +824,26 @@
         <!-- 사이드바 - 목차 -->
         <div class="sidebar">
             <h1>📖 자유의지 예측</h1>
+            
+            <!-- Phase 2: 목차 관리 버튼 -->
+            <button id="tocManageBtn" class="toc-manage-btn">
+                <span>🛠️ 목차 관리</span>
+            </button>
+            
+            <!-- Phase 2: 새 챕터 추가 영역 -->
+            <div class="add-chapter-area" id="addChapterArea">
+                <h4 style="margin-bottom: 10px; color: #666; font-size: 13px;">➕ 새 챕터 추가</h4>
+                <input type="text" class="add-chapter-input" id="newChapterTitle" placeholder="새 챕터 제목을 입력하세요...">
+                <select class="add-chapter-input" id="newChapterParent">
+                    <option value="">최상위 레벨로 추가</option>
+                    <!-- JavaScript로 동적 생성 -->
+                </select>
+                <div class="add-chapter-buttons">
+                    <button class="btn-add" onclick="addNewChapter()">✓ 추가</button>
+                    <button class="btn-cancel" onclick="cancelAddChapter()">✕ 취소</button>
+                </div>
+            </div>
+
             <div style="margin-bottom: 15px; text-align: right;">
                 <button id="collapseAllBtn" class="btn btn-small" style="font-size: 12px; padding: 5px 12px;">
                     − 모두 접기
@@ -1918,6 +2065,468 @@
 
         document.getElementById('saveBtn').addEventListener('click', saveContent);
         document.getElementById('cancelBtn').addEventListener('click', cancelEdit);
+
+
+        // ========== Phase 2: 목차 관리 시스템 ==========
+        
+        let isTocManageMode = false;
+
+        // 목차 관리 모드 토글
+        document.getElementById('tocManageBtn').addEventListener('click', () => {
+            isTocManageMode = !isTocManageMode;
+            const sidebar = document.querySelector('.sidebar');
+            const btn = document.getElementById('tocManageBtn');
+            
+            if (isTocManageMode) {
+                sidebar.classList.add('toc-manage-mode');
+                btn.classList.add('active');
+                btn.innerHTML = '<span>✖️ 관리 모드 종료</span>';
+                renderChapterTreeWithActions();
+                populateParentSelect();
+            } else {
+                sidebar.classList.remove('toc-manage-mode');
+                btn.classList.remove('active');
+                btn.innerHTML = '<span>🛠️ 목차 관리</span>';
+                renderChapterTree();
+            }
+        });
+
+        // 액션 버튼이 포함된 목차 트리 렌더링
+        function renderChapterTreeWithActions() {
+            const treeElement = document.getElementById('chapterTree');
+            treeElement.innerHTML = '';
+
+            Object.keys(tableOfContents).forEach((key, index) => {
+                const chapter = tableOfContents[key];
+                const li = document.createElement('li');
+                li.className = 'chapter-item';
+                li.dataset.chapterId = key;
+
+                const header = document.createElement('div');
+                header.className = 'chapter-item-header';
+
+                // 토글 버튼
+                if (chapter.children) {
+                    const toggleBtn = document.createElement('button');
+                    toggleBtn.className = 'toggle-btn expanded';
+                    toggleBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        toggleChapter(toggleBtn);
+                    };
+                    header.appendChild(toggleBtn);
+                }
+
+                // 챕터 링크
+                const link = document.createElement('a');
+                link.className = 'chapter-link' + (chapterData[key]?.content ? ' has-content' : '');
+                link.textContent = chapter.title;
+                link.onclick = () => selectChapter(key);
+                header.appendChild(link);
+
+                // 액션 버튼들
+                const actions = document.createElement('div');
+                actions.className = 'toc-actions';
+                
+                // 위로 이동
+                if (index > 0) {
+                    const upBtn = document.createElement('button');
+                    upBtn.className = 'toc-action-btn up';
+                    upBtn.innerHTML = '↑';
+                    upBtn.title = '위로 이동';
+                    upBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        moveChapterUp(key);
+                    };
+                    actions.appendChild(upBtn);
+                }
+
+                // 아래로 이동
+                if (index < Object.keys(tableOfContents).length - 1) {
+                    const downBtn = document.createElement('button');
+                    downBtn.className = 'toc-action-btn down';
+                    downBtn.innerHTML = '↓';
+                    downBtn.title = '아래로 이동';
+                    downBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        moveChapterDown(key);
+                    };
+                    actions.appendChild(downBtn);
+                }
+
+                // 제목 수정
+                const editBtn = document.createElement('button');
+                editBtn.className = 'toc-action-btn edit';
+                editBtn.innerHTML = '✏️';
+                editBtn.title = '제목 수정';
+                editBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    editChapterTitle(key);
+                };
+                actions.appendChild(editBtn);
+
+                // 삭제
+                if (!chapter.isSpecial) {
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.className = 'toc-action-btn delete';
+                    deleteBtn.innerHTML = '🗑️';
+                    deleteBtn.title = '삭제';
+                    deleteBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        deleteChapter(key);
+                    };
+                    actions.appendChild(deleteBtn);
+                }
+
+                header.appendChild(actions);
+                li.appendChild(header);
+
+                // 하위 챕터
+                if (chapter.children) {
+                    const subUl = document.createElement('ul');
+                    subUl.className = 'chapter-tree sub-chapter';
+                    renderSubChaptersWithActions(chapter.children, subUl, key);
+                    li.appendChild(subUl);
+                }
+
+                treeElement.appendChild(li);
+            });
+        }
+
+        // 하위 챕터 렌더링 (액션 버튼 포함)
+        function renderSubChaptersWithActions(children, parentElement, prefix) {
+            const keys = Object.keys(children);
+            keys.forEach((key, index) => {
+                const child = children[key];
+                const fullKey = prefix + '-' + key;
+                
+                const li = document.createElement('li');
+                li.className = 'chapter-item';
+                li.dataset.chapterId = fullKey;
+
+                const header = document.createElement('div');
+                header.className = 'chapter-item-header';
+
+                if (child.children) {
+                    const toggleBtn = document.createElement('button');
+                    toggleBtn.className = 'toggle-btn expanded';
+                    toggleBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        toggleChapter(toggleBtn);
+                    };
+                    header.appendChild(toggleBtn);
+                }
+
+                const link = document.createElement('a');
+                link.className = 'chapter-link' + (chapterData[fullKey]?.content ? ' has-content' : '');
+                link.textContent = child.title;
+                link.onclick = () => selectChapter(fullKey);
+                header.appendChild(link);
+
+                // 액션 버튼들
+                const actions = document.createElement('div');
+                actions.className = 'toc-actions';
+                
+                // 위로
+                if (index > 0) {
+                    const upBtn = document.createElement('button');
+                    upBtn.className = 'toc-action-btn up';
+                    upBtn.innerHTML = '↑';
+                    upBtn.title = '위로 이동';
+                    upBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        moveChapterUp(fullKey);
+                    };
+                    actions.appendChild(upBtn);
+                }
+
+                // 아래로
+                if (index < keys.length - 1) {
+                    const downBtn = document.createElement('button');
+                    downBtn.className = 'toc-action-btn down';
+                    downBtn.innerHTML = '↓';
+                    downBtn.title = '아래로 이동';
+                    downBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        moveChapterDown(fullKey);
+                    };
+                    actions.appendChild(downBtn);
+                }
+
+                // 레벨업 (왼쪽)
+                const leftBtn = document.createElement('button');
+                leftBtn.className = 'toc-action-btn left';
+                leftBtn.innerHTML = '←';
+                leftBtn.title = '레벨 올리기 (상위로)';
+                leftBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    changeLevelUp(fullKey);
+                };
+                actions.appendChild(leftBtn);
+
+                // 레벨다운 (오른쪽) - 첫 번째가 아닐 때만
+                if (index > 0) {
+                    const rightBtn = document.createElement('button');
+                    rightBtn.className = 'toc-action-btn right';
+                    rightBtn.innerHTML = '→';
+                    rightBtn.title = '레벨 내리기 (하위로)';
+                    rightBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        changeLevelDown(fullKey);
+                    };
+                    actions.appendChild(rightBtn);
+                }
+
+                // 수정
+                const editBtn = document.createElement('button');
+                editBtn.className = 'toc-action-btn edit';
+                editBtn.innerHTML = '✏️';
+                editBtn.title = '제목 수정';
+                editBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    editChapterTitle(fullKey);
+                };
+                actions.appendChild(editBtn);
+
+                // 삭제
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'toc-action-btn delete';
+                deleteBtn.innerHTML = '🗑️';
+                deleteBtn.title = '삭제';
+                deleteBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    deleteChapter(fullKey);
+                };
+                actions.appendChild(deleteBtn);
+
+                header.appendChild(actions);
+                li.appendChild(header);
+
+                if (child.children) {
+                    const subUl = document.createElement('ul');
+                    subUl.className = 'chapter-tree sub-sub-chapter';
+                    renderSubChaptersWithActions(child.children, subUl, fullKey);
+                    li.appendChild(subUl);
+                }
+
+                parentElement.appendChild(li);
+            });
+        }
+
+        // 챕터 위로 이동
+        function moveChapterUp(chapterId) {
+            console.log('위로 이동:', chapterId);
+            showMessage('위로 이동 기능은 개발 중입니다.', false);
+            // TODO: 구현 필요
+        }
+
+        // 챕터 아래로 이동
+        function moveChapterDown(chapterId) {
+            console.log('아래로 이동:', chapterId);
+            showMessage('아래로 이동 기능은 개발 중입니다.', false);
+            // TODO: 구현 필요
+        }
+
+        // 레벨 올리기 (자식 → 형제)
+        function changeLevelUp(chapterId) {
+            console.log('레벨 올리기:', chapterId);
+            showMessage('레벨 올리기 기능은 개발 중입니다.', false);
+            // TODO: 구현 필요
+        }
+
+        // 레벨 내리기 (형제 → 자식)
+        function changeLevelDown(chapterId) {
+            console.log('레벨 내리기:', chapterId);
+            showMessage('레벨 내리기 기능은 개발 중입니다.', false);
+            // TODO: 구현 필요
+        }
+
+        // 제목 수정
+        function editChapterTitle(chapterId) {
+            const chapter = getChapterById(chapterId);
+            if (!chapter) return;
+
+            const newTitle = prompt('새 제목을 입력하세요:', chapter.title);
+            if (newTitle && newTitle.trim()) {
+                chapter.title = newTitle.trim();
+                saveTOCToLocalStorage();
+                renderChapterTreeWithActions();
+                showMessage('제목이 수정되었습니다.', false);
+            }
+        }
+
+        // 챕터 삭제
+        function deleteChapter(chapterId) {
+            const chapter = getChapterById(chapterId);
+            if (!chapter) return;
+
+            if (!confirm(`"${chapter.title}"을(를) 삭제하시겠습니까?\n\n⚠️ 하위 챕터와 내용도 함께 삭제됩니다!`)) {
+                return;
+            }
+
+            removeChapterById(chapterId);
+            saveTOCToLocalStorage();
+            renderChapterTreeWithActions();
+            showMessage('챕터가 삭제되었습니다.', false);
+        }
+
+        // 새 챕터 추가
+        function addNewChapter() {
+            const titleInput = document.getElementById('newChapterTitle');
+            const parentSelect = document.getElementById('newChapterParent');
+            
+            const title = titleInput.value.trim();
+            const parentId = parentSelect.value;
+
+            if (!title) {
+                alert('제목을 입력해주세요.');
+                return;
+            }
+
+            // 새 ID 생성
+            const newId = generateNewChapterId(parentId);
+            
+            // 새 챕터 객체
+            const newChapter = {
+                title: title
+            };
+
+            // 부모가 있으면 children에 추가, 없으면 최상위에 추가
+            if (parentId) {
+                const parent = getChapterById(parentId);
+                if (parent) {
+                    if (!parent.children) {
+                        parent.children = {};
+                    }
+                    parent.children[newId] = newChapter;
+                }
+            } else {
+                tableOfContents[newId] = newChapter;
+            }
+
+            saveTOCToLocalStorage();
+            renderChapterTreeWithActions();
+            populateParentSelect();
+            
+            // 입력 필드 초기화
+            titleInput.value = '';
+            parentSelect.value = '';
+            
+            showMessage(`"${title}" 챕터가 추가되었습니다.`, false);
+        }
+
+        // 새 챕터 추가 취소
+        function cancelAddChapter() {
+            document.getElementById('newChapterTitle').value = '';
+            document.getElementById('newChapterParent').value = '';
+        }
+
+        // 부모 선택 드롭다운 채우기
+        function populateParentSelect() {
+            const select = document.getElementById('newChapterParent');
+            select.innerHTML = '<option value="">최상위 레벨로 추가</option>';
+
+            function addOptions(obj, prefix = '', indent = '') {
+                Object.keys(obj).forEach(key => {
+                    const chapter = obj[key];
+                    if (chapter.isSpecial) return; // 특수 항목 제외
+                    
+                    const option = document.createElement('option');
+                    option.value = prefix + key;
+                    option.textContent = indent + chapter.title;
+                    select.appendChild(option);
+
+                    if (chapter.children) {
+                        addOptions(chapter.children, prefix + key + '-', indent + '  ');
+                    }
+                });
+            }
+
+            addOptions(tableOfContents);
+        }
+
+        // 새 챕터 ID 생성
+        function generateNewChapterId(parentId) {
+            if (!parentId) {
+                // 최상위 레벨
+                const keys = Object.keys(tableOfContents);
+                let maxNum = 0;
+                keys.forEach(key => {
+                    if (key.startsWith('new')) {
+                        const num = parseInt(key.replace('new', '')) || 0;
+                        maxNum = Math.max(maxNum, num);
+                    }
+                });
+                return 'new' + (maxNum + 1);
+            } else {
+                // 하위 레벨
+                const parent = getChapterById(parentId);
+                if (!parent || !parent.children) return 'new1';
+                
+                const keys = Object.keys(parent.children);
+                let maxNum = 0;
+                keys.forEach(key => {
+                    const num = parseInt(key) || 0;
+                    maxNum = Math.max(maxNum, num);
+                });
+                return String(maxNum + 1);
+            }
+        }
+
+        // ID로 챕터 찾기
+        function getChapterById(chapterId) {
+            const parts = chapterId.split('-');
+            let current = tableOfContents;
+            
+            for (let i = 0; i < parts.length; i++) {
+                if (!current[parts[i]]) return null;
+                if (i === parts.length - 1) {
+                    return current[parts[i]];
+                }
+                current = current[parts[i]].children;
+                if (!current) return null;
+            }
+            return null;
+        }
+
+        // ID로 챕터 삭제
+        function removeChapterById(chapterId) {
+            const parts = chapterId.split('-');
+            
+            if (parts.length === 1) {
+                // 최상위 레벨
+                delete tableOfContents[chapterId];
+                return;
+            }
+
+            // 하위 레벨
+            let current = tableOfContents;
+            for (let i = 0; i < parts.length - 1; i++) {
+                if (!current[parts[i]] || !current[parts[i]].children) return;
+                current = current[parts[i]].children;
+            }
+            delete current[parts[parts.length - 1]];
+        }
+
+        // TOC를 로컬 스토리지에 저장
+        function saveTOCToLocalStorage() {
+            localStorage.setItem('tableOfContents', JSON.stringify(tableOfContents));
+            updateProgress(); // 진행률도 업데이트
+        }
+
+        // 페이지 로드 시 저장된 TOC 불러오기
+        function loadTOCFromLocalStorage() {
+            const saved = localStorage.getItem('tableOfContents');
+            if (saved) {
+                try {
+                    const loaded = JSON.parse(saved);
+                    Object.assign(tableOfContents, loaded);
+                    console.log('✅ 저장된 목차를 불러왔습니다.');
+                } catch (e) {
+                    console.error('❌ 목차 로드 실패:', e);
+                }
+            }
+        }
+
     </script>
 </body>
     <!-- 제목 편집 통합 - 모든 함수 정의 후 로드 -->\r\n    <script src="title-integration.js"></script>

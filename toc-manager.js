@@ -31,33 +31,35 @@ function unescapeHtml(html) {
 
 /**
  * 챕터 ID로 제목 가져오기
- * @param {string} chapterId - 챕터 ID
+ * @param {string} chapterId - 챕터 ID (예: "prologue", "prologue-p1", "part1-1-1-1")
  * @returns {string} 챕터 제목
  */
 function getChapterTitle(chapterId) {
     if (!chapterId || !window.tableOfContents) return '';
     
-    // 1단계: 최상위 레벨
-    if (window.tableOfContents[chapterId]) {
-        return window.tableOfContents[chapterId].title;
-    }
+    // ID를 '-'로 분리하여 계층적으로 탐색
+    const parts = chapterId.split('-');
+    let current = window.tableOfContents;
     
-    // 2단계: children 탐색
-    for (const parentKey of Object.keys(window.tableOfContents)) {
-        const parent = window.tableOfContents[parentKey];
-        if (parent.children && parent.children[chapterId]) {
-            return parent.children[chapterId].title;
+    for (let i = 0; i < parts.length; i++) {
+        const part = parts[i];
+        
+        if (!current[part]) {
+            console.warn(`⚠️ 챕터를 찾을 수 없음: ${chapterId} (${part})`);
+            return '';
         }
         
-        // 3단계: children의 children 탐색
-        if (parent.children) {
-            for (const childKey of Object.keys(parent.children)) {
-                const child = parent.children[childKey];
-                if (child.children && child.children[chapterId]) {
-                    return child.children[chapterId].title;
-                }
-            }
+        // 마지막 부분이면 제목 반환
+        if (i === parts.length - 1) {
+            return current[part].title || '';
         }
+        
+        // 다음 레벨의 children으로 이동
+        if (!current[part].children) {
+            console.warn(`⚠️ children이 없음: ${chapterId} (${part})`);
+            return '';
+        }
+        current = current[part].children;
     }
     
     return '';
@@ -65,37 +67,38 @@ function getChapterTitle(chapterId) {
 
 /**
  * 제목 업데이트 (tableOfContents 객체 수정)
- * @param {string} chapterId - 챕터 ID
+ * @param {string} chapterId - 챕터 ID (예: "prologue", "prologue-p1", "part1-1-1-1")
  * @param {string} newTitle - 새 제목
  * @returns {boolean} 성공 여부
  */
 function updateChapterTitle(chapterId, newTitle) {
     if (!chapterId || !newTitle || !window.tableOfContents) return false;
     
-    // 1단계: 최상위 레벨
-    if (window.tableOfContents[chapterId]) {
-        window.tableOfContents[chapterId].title = newTitle;
-        return true;
-    }
+    // ID를 '-'로 분리하여 계층적으로 탐색
+    const parts = chapterId.split('-');
+    let current = window.tableOfContents;
     
-    // 2단계: children 탐색
-    for (const parentKey of Object.keys(window.tableOfContents)) {
-        const parent = window.tableOfContents[parentKey];
-        if (parent.children && parent.children[chapterId]) {
-            parent.children[chapterId].title = newTitle;
+    for (let i = 0; i < parts.length; i++) {
+        const part = parts[i];
+        
+        if (!current[part]) {
+            console.warn(`⚠️ 챕터를 찾을 수 없음: ${chapterId} (${part})`);
+            return false;
+        }
+        
+        // 마지막 부분이면 제목 업데이트
+        if (i === parts.length - 1) {
+            current[part].title = newTitle;
+            console.log(`✅ 제목 업데이트 성공: ${chapterId} → "${newTitle}"`);
             return true;
         }
         
-        // 3단계: children의 children 탐색
-        if (parent.children) {
-            for (const childKey of Object.keys(parent.children)) {
-                const child = parent.children[childKey];
-                if (child.children && child.children[chapterId]) {
-                    child.children[chapterId].title = newTitle;
-                    return true;
-                }
-            }
+        // 다음 레벨의 children으로 이동
+        if (!current[part].children) {
+            console.warn(`⚠️ children이 없음: ${chapterId} (${part})`);
+            return false;
         }
+        current = current[part].children;
     }
     
     return false;
