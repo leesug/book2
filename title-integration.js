@@ -92,31 +92,44 @@ window.addEventListener('DOMContentLoaded', () => {
         editorArea.innerHTML = `
             ${titleEditorHTML}
             <div class="toolbar">
-                <button onclick="insertFormat('h1')">제목 1</button>
-                <button onclick="insertFormat('h2')">제목 2</button>
-                <button onclick="insertFormat('h3')">제목 3</button>
-                <button onclick="insertFormat('hr')">구분선</button>
-                <button onclick="insertFormat('table')">표 삽입</button>
-                <button onclick="insertFormat('bold')">굵게</button>
-                <button onclick="insertFormat('italic')">기울임</button>
-                <button onclick="document.getElementById('imageInput').click()" style="background: #FF9800; color: white;">🖼️ 이미지</button>
-                <input type="file" id="imageInput" accept="image/*" style="display: none;" onchange="insertImage(this)">
-            </div>
-            <div id="editorWrapper" style="position: relative;">
-                <div id="contentEditor" contenteditable="true" class="content-editor-editable">${data.content || '<p>내용을 입력하세요...</p>'}</div>
-                <div id="dropOverlay" style="display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(76, 175, 80, 0.1); border: 3px dashed #4CAF50; border-radius: 5px; display: flex; align-items: center; justify-content: center; pointer-events: none;">
-                    <div style="background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-                        <h3 style="color: #4CAF50; margin: 0;">🖼️ 이미지를 여기에 드롭하세요</h3>
-                    </div>
+                <!-- 텍스트 스타일 그룹 -->
+                <div class="toolbar-group">
+                    <span class="toolbar-group-label">📝 텍스트</span>
+                    <button onclick="insertFormat('p')" title="본문">본문</button>
+                    <button onclick="insertFormat('h1')" title="제목 1">제목 1</button>
+                    <button onclick="insertFormat('h2')" title="제목 2">제목 2</button>
+                    <button onclick="insertFormat('h3')" title="제목 3">제목 3</button>
+                </div>
+
+                <!-- 서식 그룹 -->
+                <div class="toolbar-group">
+                    <span class="toolbar-group-label">✏️ 서식</span>
+                    <button onclick="insertFormat('bold')" title="굵게"><strong>B</strong></button>
+                    <button onclick="insertFormat('italic')" title="기울임"><em>I</em></button>
+                    <button onclick="insertFormat('underline')" title="밑줄"><u>U</u></button>
+                </div>
+
+                <!-- 구분선 그룹 -->
+                <div class="toolbar-group">
+                    <span class="toolbar-group-label">➖ 구분선</span>
+                    <button onclick="insertFormat('hr-solid')" title="실선">━━━</button>
+                    <button onclick="insertFormat('hr-dashed')" title="점선">┈┈┈</button>
+                </div>
+
+                <!-- 삽입 그룹 -->
+                <div class="toolbar-group">
+                    <span class="toolbar-group-label">📊 삽입</span>
+                    <button onclick="insertTableWithSize()" title="표 삽입">📊 표</button>
+                    <button onclick="document.getElementById('imageInput').click()" class="btn-image" title="이미지 삽입">🖼️ 이미지</button>
+                    <input type="file" id="imageInput" accept="image/*" style="display: none;" onchange="insertImage(this)">
                 </div>
             </div>
+            <div id="contentEditor" contenteditable="true" class="content-editor-editable">${data.content || '<p>내용을 입력하세요...</p>'}</div>
             ${window.renderAttachments ? window.renderAttachments(data.attachments || [], true) : ''}
         `;
 
-        // 드래그 앤 드롭 설정
-        if (typeof window.setupDragAndDrop === 'function') {
-            window.setupDragAndDrop();
-        }
+        // 드래그 앤 드롭 설정 제거
+
         
         console.log('✅ 편집 모드 진입 완료 (제목 입력 필드 포함)');
     };
