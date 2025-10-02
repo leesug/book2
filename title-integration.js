@@ -125,22 +125,38 @@ window.addEventListener('DOMContentLoaded', () => {
      * 🔄 saveContent 오버라이드 - 저장 시 제목도 함께 저장
      */
     window.saveContent = async function() {
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
         console.log('🎯 saveContent 호출 (제목 통합 버전)');
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
         
         // 1️⃣ 제목 저장 (TOC Manager 사용)
+        console.log('1️⃣ 제목 저장 단계 시작');
+        console.log('  - TOCManager 존재:', !!window.TOCManager);
+        console.log('  - saveChapterTitle 함수 존재:', !!(window.TOCManager && typeof window.TOCManager.saveChapterTitle === 'function'));
+        
         if (window.TOCManager && typeof window.TOCManager.saveChapterTitle === 'function') {
+            console.log('  - TOCManager.saveChapterTitle() 호출 중...');
             const titleSaved = window.TOCManager.saveChapterTitle();
+            console.log('  - 제목 저장 결과:', titleSaved);
+            
             if (titleSaved) {
                 console.log('✅ 챕터 제목 저장 완료');
+            } else {
+                console.log('ℹ️ 제목이 변경되지 않았거나 저장 실패');
             }
+        } else {
+            console.error('❌ TOCManager.saveChapterTitle을 찾을 수 없습니다!');
         }
 
         // 2️⃣ 내용 저장 (기존 로직)
+        console.log('2️⃣ 내용 저장 단계 시작');
         const editor = document.getElementById('contentEditor');
         const content = editor.contentEditable === 'true' ? editor.innerHTML : editor.value;
         
         // currentChapterId는 전역 변수로 존재 (window 없이 접근)
         const chapterId = window.currentChapterId || currentChapterId;
+        console.log('  - chapterId:', chapterId);
+        console.log('  - content 길이:', content.length);
         
         const response = await fetch(`/api/chapters/${chapterId}`);
         const currentData = await response.json();
@@ -176,10 +192,12 @@ window.addEventListener('DOMContentLoaded', () => {
                 }
                 
                 console.log('✅ 내용 저장 완료');
+                console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
             } else {
                 if (typeof window.showMessage === 'function') {
                     window.showMessage('저장에 실패했습니다.', true);
                 }
+                console.error('❌ 저장 실패:', result);
             }
         } catch (error) {
             console.error('❌ 저장 실패:', error);

@@ -216,24 +216,46 @@ function createTitleViewHTML(chapterId) {
  * @returns {boolean} 성공 여부
  */
 function saveChapterTitle() {
+    console.log('🔍 saveChapterTitle 시작');
+    console.log('  - currentChapterId:', window.currentChapterId);
+    console.log('  - originalTitle:', originalTitle);
+    
     const titleInput = document.getElementById('chapterTitleInput');
-    if (!titleInput) return false;
+    console.log('  - titleInput 존재:', !!titleInput);
+    
+    if (!titleInput) {
+        console.warn('⚠️ titleInput을 찾을 수 없습니다!');
+        return false;
+    }
     
     const newTitle = titleInput.value.trim();
+    console.log('  - newTitle:', newTitle);
+    console.log('  - 제목 변경됨:', newTitle !== originalTitle);
     
     // 제목이 변경되었는지 확인
     if (newTitle && newTitle !== originalTitle) {
+        console.log('✅ 제목이 변경되었습니다. 업데이트 시도...');
+        
         if (updateChapterTitle(window.currentChapterId, newTitle)) {
+            console.log('✅ updateChapterTitle 성공');
+            
             saveTOCToLocalStorage(); // localStorage에 저장
-            console.log(`✅ 제목 업데이트: "${originalTitle}" → "${newTitle}"`);
+            console.log(`✅ 제목 업데이트 완료: "${originalTitle}" → "${newTitle}"`);
             
             // 목차 트리 새로고침
             if (typeof window.renderChapterTree === 'function') {
+                console.log('✅ 목차 트리 새로고침 중...');
                 window.renderChapterTree();
+            } else {
+                console.warn('⚠️ renderChapterTree 함수를 찾을 수 없습니다!');
             }
             
             return true;
+        } else {
+            console.error('❌ updateChapterTitle 실패');
         }
+    } else {
+        console.log('ℹ️ 제목이 변경되지 않았거나 비어있습니다.');
     }
     
     return false;
