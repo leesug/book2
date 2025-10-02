@@ -30,17 +30,19 @@ window.addEventListener('DOMContentLoaded', () => {
         // 제목 HTML 생성 (TOC Manager 사용)
         console.log('🔍 뷰모드 디버깅:', {
             hasTOCManager: !!window.TOCManager,
-            currentChapterId: window.currentChapterId,
+            currentChapterId: window.currentChapterId || currentChapterId,
             hasCreateFunction: !!(window.TOCManager && window.TOCManager.createTitleViewHTML)
         });
         
-        const titleHTML = window.TOCManager && window.currentChapterId 
-            ? window.TOCManager.createTitleViewHTML(window.currentChapterId) 
+        // currentChapterId는 전역 변수로 존재 (window 없이 접근)
+        const chapterId = window.currentChapterId || currentChapterId;
+        const titleHTML = window.TOCManager && chapterId
+            ? window.TOCManager.createTitleViewHTML(chapterId) 
             : '';
         
         console.log('📝 제목 HTML 길이:', titleHTML.length);
         if (titleHTML.length === 0) {
-            console.warn('⚠️ 제목 표시가 생성되지 않았습니다!');
+            console.warn('⚠️ 제목 표시가 생성되지 않았습니다!', {chapterId});
         }
         
         editorArea.innerHTML = `
@@ -72,17 +74,19 @@ window.addEventListener('DOMContentLoaded', () => {
         // 제목 편집 HTML 생성 (TOC Manager 사용)
         console.log('🔍 디버깅:', {
             hasTOCManager: !!window.TOCManager,
-            currentChapterId: window.currentChapterId,
+            currentChapterId: window.currentChapterId || currentChapterId,
             hasCreateFunction: !!(window.TOCManager && window.TOCManager.createTitleEditorHTML)
         });
         
-        const titleEditorHTML = window.TOCManager && window.currentChapterId
-            ? window.TOCManager.createTitleEditorHTML(window.currentChapterId)
+        // currentChapterId는 전역 변수로 존재 (window 없이 접근)
+        const chapterId = window.currentChapterId || currentChapterId;
+        const titleEditorHTML = window.TOCManager && chapterId
+            ? window.TOCManager.createTitleEditorHTML(chapterId)
             : '';
         
         console.log('📝 제목 HTML 길이:', titleEditorHTML.length);
         if (titleEditorHTML.length === 0) {
-            console.warn('⚠️ 제목 입력 필드가 생성되지 않았습니다!');
+            console.warn('⚠️ 제목 입력 필드가 생성되지 않았습니다!', {chapterId});
         }
 
         editorArea.innerHTML = `
@@ -135,11 +139,14 @@ window.addEventListener('DOMContentLoaded', () => {
         const editor = document.getElementById('contentEditor');
         const content = editor.contentEditable === 'true' ? editor.innerHTML : editor.value;
         
-        const response = await fetch(`/api/chapters/${window.currentChapterId}`);
+        // currentChapterId는 전역 변수로 존재 (window 없이 접근)
+        const chapterId = window.currentChapterId || currentChapterId;
+        
+        const response = await fetch(`/api/chapters/${chapterId}`);
         const currentData = await response.json();
 
         try {
-            const saveResponse = await fetch(`/api/chapters/${window.currentChapterId}`, {
+            const saveResponse = await fetch(`/api/chapters/${chapterId}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -165,7 +172,7 @@ window.addEventListener('DOMContentLoaded', () => {
                     window.renderChapterTree();
                 }
                 if (typeof window.loadChapterContent === 'function') {
-                    await window.loadChapterContent(window.currentChapterId);
+                    await window.loadChapterContent(chapterId);
                 }
                 
                 console.log('✅ 내용 저장 완료');
