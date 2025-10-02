@@ -12,59 +12,60 @@ const improvedCSS = `
 <style id="improved-editor-css">
     /* 툴바 스타일 오버라이드 */
     .toolbar {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-        padding: 15px !important;
-        border-radius: 8px !important;
-        gap: 10px !important;
+        background: #f5f5f5 !important;
+        padding: 8px 10px !important;
+        border-radius: 5px !important;
+        border: 1px solid #e0e0e0 !important;
+        gap: 5px !important;
         align-items: center !important;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
+        flex-wrap: nowrap !important;
     }
 
     .toolbar-group {
         display: flex;
-        gap: 5px;
-        padding: 5px;
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 5px;
-        border-left: 3px solid rgba(255, 255, 255, 0.3);
+        gap: 3px;
+        padding: 3px 5px;
+        background: #fff;
+        border-radius: 4px;
+        border-left: 2px solid #ccc;
+        align-items: center;
     }
 
     .toolbar-group-label {
-        color: white;
-        font-size: 11px;
+        color: #666 !important;
+        font-size: 9px !important;
         font-weight: 600;
         text-transform: uppercase;
-        letter-spacing: 0.5px;
-        padding: 0 8px;
+        letter-spacing: 0.3px;
+        padding: 0 5px;
         display: flex;
         align-items: center;
-        opacity: 0.8;
     }
 
     .toolbar button {
-        padding: 8px 12px !important;
-        border: 1px solid rgba(255, 255, 255, 0.3) !important;
-        background: rgba(255, 255, 255, 0.9) !important;
-        border-radius: 4px !important;
-        font-weight: 500 !important;
+        padding: 4px 8px !important;
+        border: 1px solid #ddd !important;
+        background: white !important;
+        border-radius: 3px !important;
+        font-size: 11px !important;
         color: #333 !important;
         white-space: nowrap !important;
     }
 
     .toolbar button:hover {
-        background: white !important;
-        transform: translateY(-1px);
-        box-shadow: 0 2px 5px rgba(0,0,0,0.15) !important;
+        background: #e8e8e8 !important;
+        border-color: #bbb !important;
     }
 
     .toolbar button.btn-image {
-        background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%) !important;
+        background: #ff9800 !important;
         color: white !important;
-        border: none !important;
+        border: 1px solid #ff9800 !important;
     }
 
     .toolbar button.btn-image:hover {
-        background: linear-gradient(135deg, #FF8E53 0%, #FF6B6B 100%) !important;
+        background: #f57c00 !important;
+        border-color: #f57c00 !important;
     }
 </style>
 `;
