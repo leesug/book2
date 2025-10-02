@@ -28,9 +28,20 @@ window.addEventListener('DOMContentLoaded', () => {
         const editorArea = document.getElementById('editorArea');
         
         // 제목 HTML 생성 (TOC Manager 사용)
+        console.log('🔍 뷰모드 디버깅:', {
+            hasTOCManager: !!window.TOCManager,
+            currentChapterId: window.currentChapterId,
+            hasCreateFunction: !!(window.TOCManager && window.TOCManager.createTitleViewHTML)
+        });
+        
         const titleHTML = window.TOCManager && window.currentChapterId 
             ? window.TOCManager.createTitleViewHTML(window.currentChapterId) 
             : '';
+        
+        console.log('📝 제목 HTML 길이:', titleHTML.length);
+        if (titleHTML.length === 0) {
+            console.warn('⚠️ 제목 표시가 생성되지 않았습니다!');
+        }
         
         editorArea.innerHTML = `
             ${titleHTML}
@@ -59,9 +70,20 @@ window.addEventListener('DOMContentLoaded', () => {
         const editorArea = document.getElementById('editorArea');
         
         // 제목 편집 HTML 생성 (TOC Manager 사용)
+        console.log('🔍 디버깅:', {
+            hasTOCManager: !!window.TOCManager,
+            currentChapterId: window.currentChapterId,
+            hasCreateFunction: !!(window.TOCManager && window.TOCManager.createTitleEditorHTML)
+        });
+        
         const titleEditorHTML = window.TOCManager && window.currentChapterId
             ? window.TOCManager.createTitleEditorHTML(window.currentChapterId)
             : '';
+        
+        console.log('📝 제목 HTML 길이:', titleEditorHTML.length);
+        if (titleEditorHTML.length === 0) {
+            console.warn('⚠️ 제목 입력 필드가 생성되지 않았습니다!');
+        }
 
         editorArea.innerHTML = `
             ${titleEditorHTML}
