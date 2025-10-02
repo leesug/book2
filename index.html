@@ -504,6 +504,39 @@
             background: #f0f0f0;
         }
 
+        /* ========== 개선된 툴바 스타일 ========== */
+        .toolbar-group {
+            display: flex;
+            gap: 5px;
+            padding: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            border-left: 3px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .toolbar-group-label {
+            color: white;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 0 8px;
+            display: flex;
+            align-items: center;
+            opacity: 0.8;
+        }
+
+        .toolbar button.btn-image {
+            background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%);
+            color: white;
+            border: none;
+        }
+
+        .toolbar button.btn-image:hover {
+            background: linear-gradient(135deg, #FF8E53 0%, #FF6B6B 100%);
+        }
+
+
         #contentEditor {
             width: 100%;
             min-height: 400px;
@@ -2837,4 +2870,6 @@
     </script>
 </body>
     <!-- 제목 편집 통합 - 모든 함수 정의 후 로드 -->\r\n    <script src="title-integration.js"></script>
+    <!-- 편집기 개선 패치 -->
+    <script src="editor-improvements.js"></script>
 </html>
