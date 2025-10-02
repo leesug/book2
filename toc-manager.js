@@ -72,32 +72,47 @@ function getChapterTitle(chapterId) {
  * @returns {boolean} 성공 여부
  */
 function updateChapterTitle(chapterId, newTitle) {
-    if (!chapterId || !newTitle || !window.tableOfContents) return false;
+    console.log('🔧 updateChapterTitle 시작');
+    console.log('  - chapterId:', chapterId);
+    console.log('  - newTitle:', newTitle);
+    
+    if (!chapterId || !newTitle || !window.tableOfContents) {
+        console.error('❌ 유효하지 않은 입력:', {chapterId, newTitle, hasTableOfContents: !!window.tableOfContents});
+        return false;
+    }
     
     // ID를 '-'로 분리하여 계층적으로 탐색
     const parts = chapterId.split('-');
+    console.log('  - ID parts:', parts);
+    
     let current = window.tableOfContents;
     
     for (let i = 0; i < parts.length; i++) {
         const part = parts[i];
+        console.log(`  - 단계 ${i}: "${part}" 탐색 중...`);
         
         if (!current[part]) {
-            console.warn(`⚠️ 챕터를 찾을 수 없음: ${chapterId} (${part})`);
+            console.error(`❌ 챕터를 찾을 수 없음: ${chapterId} (단계 ${i}, 키: "${part}")`);
+            console.log('  - 현재 레벨의 키들:', Object.keys(current));
             return false;
         }
         
         // 마지막 부분이면 제목 업데이트
         if (i === parts.length - 1) {
+            console.log(`  - 제목 업데이트 위치 찾음!`);
+            console.log(`  - 이전 제목: "${current[part].title}"`);
             current[part].title = newTitle;
+            console.log(`  - 새 제목: "${current[part].title}"`);
             console.log(`✅ 제목 업데이트 성공: ${chapterId} → "${newTitle}"`);
             return true;
         }
         
         // 다음 레벨의 children으로 이동
         if (!current[part].children) {
-            console.warn(`⚠️ children이 없음: ${chapterId} (${part})`);
+            console.error(`❌ children이 없음: ${chapterId} (단계 ${i}, 키: "${part}")`);
             return false;
         }
+        console.log(`  - "${part}"의 children으로 이동`);
         current = current[part].children;
     }
     
@@ -213,12 +228,18 @@ function createTitleViewHTML(chapterId) {
 
 /**
  * 저장 시 제목 업데이트 및 저장
+ * @param {string} chapterId - 챕터 ID
  * @returns {boolean} 성공 여부
  */
-function saveChapterTitle() {
+function saveChapterTitle(chapterId) {
     console.log('🔍 saveChapterTitle 시작');
-    console.log('  - currentChapterId:', window.currentChapterId);
+    console.log('  - chapterId:', chapterId);
     console.log('  - originalTitle:', originalTitle);
+    
+    if (!chapterId) {
+        console.error('❌ chapterId가 제공되지 않았습니다!');
+        return false;
+    }
     
     const titleInput = document.getElementById('chapterTitleInput');
     console.log('  - titleInput 존재:', !!titleInput);
@@ -236,7 +257,7 @@ function saveChapterTitle() {
     if (newTitle && newTitle !== originalTitle) {
         console.log('✅ 제목이 변경되었습니다. 업데이트 시도...');
         
-        if (updateChapterTitle(window.currentChapterId, newTitle)) {
+        if (updateChapterTitle(chapterId, newTitle)) {
             console.log('✅ updateChapterTitle 성공');
             
             saveTOCToLocalStorage(); // localStorage에 저장

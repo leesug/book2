@@ -134,9 +134,13 @@ window.addEventListener('DOMContentLoaded', () => {
         console.log('  - TOCManager 존재:', !!window.TOCManager);
         console.log('  - saveChapterTitle 함수 존재:', !!(window.TOCManager && typeof window.TOCManager.saveChapterTitle === 'function'));
         
+        // currentChapterId는 전역 변수로 존재 (window 없이 접근)
+        const chapterId = window.currentChapterId || currentChapterId;
+        console.log('  - chapterId:', chapterId);
+        
         if (window.TOCManager && typeof window.TOCManager.saveChapterTitle === 'function') {
             console.log('  - TOCManager.saveChapterTitle() 호출 중...');
-            const titleSaved = window.TOCManager.saveChapterTitle();
+            const titleSaved = window.TOCManager.saveChapterTitle(chapterId);
             console.log('  - 제목 저장 결과:', titleSaved);
             
             if (titleSaved) {
@@ -153,8 +157,6 @@ window.addEventListener('DOMContentLoaded', () => {
         const editor = document.getElementById('contentEditor');
         const content = editor.contentEditable === 'true' ? editor.innerHTML : editor.value;
         
-        // currentChapterId는 전역 변수로 존재 (window 없이 접근)
-        const chapterId = window.currentChapterId || currentChapterId;
         console.log('  - chapterId:', chapterId);
         console.log('  - content 길이:', content.length);
         
@@ -213,4 +215,19 @@ window.addEventListener('DOMContentLoaded', () => {
         enterEditMode: typeof window.enterEditMode,
         saveContent: typeof window.saveContent
     });
+
+    // 🔥 중요: 저장 버튼 이벤트 리스너 다시 연결
+    // 기존 이벤트 리스너는 원본 함수를 참조하고 있으므로 새로 연결해야 함
+    const saveBtn = document.getElementById('saveBtn');
+    if (saveBtn) {
+        // 기존 리스너 제거를 위해 새 버튼으로 교체
+        const newSaveBtn = saveBtn.cloneNode(true);
+        saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
+        
+        // 새 리스너 연결 (오버라이드된 함수 사용)
+        newSaveBtn.addEventListener('click', window.saveContent);
+        console.log('✅ 저장 버튼 이벤트 리스너 재연결 완료');
+    } else {
+        console.warn('⚠️ saveBtn을 찾을 수 없습니다');
+    }
 });

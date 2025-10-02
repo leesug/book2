@@ -118,6 +118,7 @@
 
         .chapter-item {
             margin: 5px 0;
+            position: relative;
         }
 
         .chapter-item-header {
@@ -194,6 +195,9 @@
             max-height: 5000px;
             transition: max-height 0.3s ease, opacity 0.3s ease;
             opacity: 1;
+            position: relative;
+            border-left: 2px solid #e0e0e0; /* 세로 연결선 */
+            padding-left: 15px;
         }
 
         .sub-chapter.collapsed {
@@ -208,12 +212,41 @@
             max-height: 5000px;
             transition: max-height 0.3s ease, opacity 0.3s ease;
             opacity: 1;
+            position: relative;
+            border-left: 2px solid #e0e0e0; /* 세로 연결선 */
+            padding-left: 15px;
         }
 
         .sub-sub-chapter.collapsed {
             max-height: 0 !important;
             opacity: 0;
         }
+
+
+        /* 트리 구조 연결선 */
+        .sub-chapter > .chapter-item::before,
+        .sub-sub-chapter > .chapter-item::before {
+            content: '';
+            position: absolute;
+            left: -15px;
+            top: 20px;
+            width: 15px;
+            height: 2px;
+            background: #e0e0e0; /* 가로 연결선 */
+        }
+
+        /* 마지막 항목은 세로선을 짧게 */
+        .sub-chapter > .chapter-item:last-child::after,
+        .sub-sub-chapter > .chapter-item:last-child::after {
+            content: '';
+            position: absolute;
+            left: -17px;
+            top: 20px;
+            bottom: 0;
+            width: 2px;
+            background: white; /* 세로선 가리기 */
+        }
+
 
         /* 메인 콘텐츠 */
         .main-content {
@@ -703,10 +736,28 @@
             align-items: center;
             gap: 4px;
             margin-left: 8px;
+            flex-wrap: wrap;
         }
 
         .toc-manage-mode .toc-actions {
             display: flex;
+            margin-left: 0;
+            margin-top: 8px;
+            padding-left: 25px; /* 토글 버튼 너비만큼 들여쓰기 */
+        }
+
+        /* 목차 관리 모드에서 헤더를 세로로 배치 */
+        .toc-manage-mode .chapter-item-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        /* 제목과 토글 버튼을 가로로 배치하는 래퍼 */
+        .chapter-title-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            width: 100%;
         }
 
         .toc-action-btn {
@@ -1154,6 +1205,10 @@
                 }
             }
         };
+
+        // ✅ window 객체에 할당하여 toc-manager.js에서 접근 가능하도록 설정
+        window.tableOfContents = tableOfContents;
+
 
         let currentChapterId = null;
         let isEditMode = false;
@@ -2105,6 +2160,10 @@
                 const header = document.createElement('div');
                 header.className = 'chapter-item-header';
 
+                // 제목 영역 (토글 버튼 + 링크)
+                const titleWrapper = document.createElement('div');
+                titleWrapper.className = 'chapter-title-wrapper';
+
                 // 토글 버튼
                 if (chapter.children) {
                     const toggleBtn = document.createElement('button');
@@ -2113,7 +2172,7 @@
                         e.stopPropagation();
                         toggleChapter(toggleBtn);
                     };
-                    header.appendChild(toggleBtn);
+                    titleWrapper.appendChild(toggleBtn);
                 }
 
                 // 챕터 링크
@@ -2121,7 +2180,9 @@
                 link.className = 'chapter-link' + (chapterData[key]?.content ? ' has-content' : '');
                 link.textContent = chapter.title;
                 link.onclick = () => selectChapter(key);
-                header.appendChild(link);
+                titleWrapper.appendChild(link);
+
+                header.appendChild(titleWrapper);
 
                 // 액션 버튼들
                 const actions = document.createElement('div');
@@ -2206,6 +2267,10 @@
                 const header = document.createElement('div');
                 header.className = 'chapter-item-header';
 
+                // 제목 영역 (토글 버튼 + 링크)
+                const titleWrapper = document.createElement('div');
+                titleWrapper.className = 'chapter-title-wrapper';
+
                 if (child.children) {
                     const toggleBtn = document.createElement('button');
                     toggleBtn.className = 'toggle-btn expanded';
@@ -2213,14 +2278,16 @@
                         e.stopPropagation();
                         toggleChapter(toggleBtn);
                     };
-                    header.appendChild(toggleBtn);
+                    titleWrapper.appendChild(toggleBtn);
                 }
 
                 const link = document.createElement('a');
                 link.className = 'chapter-link' + (chapterData[fullKey]?.content ? ' has-content' : '');
                 link.textContent = child.title;
                 link.onclick = () => selectChapter(fullKey);
-                header.appendChild(link);
+                titleWrapper.appendChild(link);
+
+                header.appendChild(titleWrapper);
 
                 // 액션 버튼들
                 const actions = document.createElement('div');
@@ -2315,29 +2382,269 @@
         // 챕터 위로 이동
         function moveChapterUp(chapterId) {
             console.log('위로 이동:', chapterId);
-            showMessage('위로 이동 기능은 개발 중입니다.', false);
-            // TODO: 구현 필요
+            
+            const parts = chapterId.split('-');
+            
+            // 부모 객체와 현재 레벨의 키들 찾기
+            let parent, currentLevel, parentKeys;
+            
+            if (parts.length === 1) {
+                // 최상위 레벨
+                currentLevel = tableOfContents;
+                parentKeys = Object.keys(tableOfContents);
+            } else {
+                // 하위 레벨
+                parent = tableOfContents;
+                for (let i = 0; i < parts.length - 1; i++) {
+                    if (!parent[parts[i]]) return;
+                    parent = parent[parts[i]];
+                }
+                
+                if (!parent.children) return;
+                currentLevel = parent.children;
+                parentKeys = Object.keys(currentLevel);
+            }
+            
+            const lastKey = parts[parts.length - 1];
+            const currentIndex = parentKeys.indexOf(lastKey);
+            
+            if (currentIndex <= 0) {
+                showMessage('이미 맨 위에 있습니다.', true);
+                return;
+            }
+            
+            // 위 항목과 순서 바꾸기
+            const newKeys = [...parentKeys];
+            [newKeys[currentIndex - 1], newKeys[currentIndex]] = [newKeys[currentIndex], newKeys[currentIndex - 1]];
+            
+            // 객체 재구성
+            const newLevel = {};
+            newKeys.forEach(key => {
+                newLevel[key] = currentLevel[key];
+            });
+            
+            // 부모 객체 업데이트
+            if (parts.length === 1) {
+                Object.keys(tableOfContents).forEach(key => delete tableOfContents[key]);
+                Object.assign(tableOfContents, newLevel);
+            } else {
+                parent.children = newLevel;
+            }
+            
+            saveTOCToLocalStorage();
+            renderChapterTreeWithActions();
+            showMessage('위로 이동했습니다.', false);
         }
 
         // 챕터 아래로 이동
         function moveChapterDown(chapterId) {
             console.log('아래로 이동:', chapterId);
-            showMessage('아래로 이동 기능은 개발 중입니다.', false);
-            // TODO: 구현 필요
+            
+            const parts = chapterId.split('-');
+            
+            // 부모 객체와 현재 레벨의 키들 찾기
+            let parent, currentLevel, parentKeys;
+            
+            if (parts.length === 1) {
+                // 최상위 레벨
+                currentLevel = tableOfContents;
+                parentKeys = Object.keys(tableOfContents);
+            } else {
+                // 하위 레벨
+                parent = tableOfContents;
+                for (let i = 0; i < parts.length - 1; i++) {
+                    if (!parent[parts[i]]) return;
+                    parent = parent[parts[i]];
+                }
+                
+                if (!parent.children) return;
+                currentLevel = parent.children;
+                parentKeys = Object.keys(currentLevel);
+            }
+            
+            const lastKey = parts[parts.length - 1];
+            const currentIndex = parentKeys.indexOf(lastKey);
+            
+            if (currentIndex < 0 || currentIndex >= parentKeys.length - 1) {
+                showMessage('이미 맨 아래에 있습니다.', true);
+                return;
+            }
+            
+            // 아래 항목과 순서 바꾸기
+            const newKeys = [...parentKeys];
+            [newKeys[currentIndex], newKeys[currentIndex + 1]] = [newKeys[currentIndex + 1], newKeys[currentIndex]];
+            
+            // 객체 재구성
+            const newLevel = {};
+            newKeys.forEach(key => {
+                newLevel[key] = currentLevel[key];
+            });
+            
+            // 부모 객체 업데이트
+            if (parts.length === 1) {
+                Object.keys(tableOfContents).forEach(key => delete tableOfContents[key]);
+                Object.assign(tableOfContents, newLevel);
+            } else {
+                parent.children = newLevel;
+            }
+            
+            saveTOCToLocalStorage();
+            renderChapterTreeWithActions();
+            showMessage('아래로 이동했습니다.', false);
         }
 
         // 레벨 올리기 (자식 → 형제)
         function changeLevelUp(chapterId) {
             console.log('레벨 올리기:', chapterId);
-            showMessage('레벨 올리기 기능은 개발 중입니다.', false);
-            // TODO: 구현 필요
+            
+            const parts = chapterId.split('-');
+            
+            if (parts.length === 1) {
+                showMessage('최상위 레벨은 더 이상 올릴 수 없습니다.', true);
+                return;
+            }
+            
+            // 현재 챕터 데이터 가져오기
+            const chapter = getChapterById(chapterId);
+            if (!chapter) {
+                showMessage('챕터를 찾을 수 없습니다.', true);
+                return;
+            }
+            
+            // 부모 찾기
+            let parent = tableOfContents;
+            for (let i = 0; i < parts.length - 2; i++) {
+                if (!parent[parts[i]] || !parent[parts[i]].children) return;
+                parent = parent[parts[i]].children;
+            }
+            
+            const parentKey = parts[parts.length - 2];
+            const currentKey = parts[parts.length - 1];
+            
+            if (!parent[parentKey] || !parent[parentKey].children || !parent[parentKey].children[currentKey]) {
+                showMessage('구조 오류가 발생했습니다.', true);
+                return;
+            }
+            
+            // 챕터 데이터 복사 (깊은 복사)
+            const chapterData = JSON.parse(JSON.stringify(chapter));
+            
+            // 현재 위치에서 삭제
+            delete parent[parentKey].children[currentKey];
+            
+            // children이 비어있으면 삭제
+            if (Object.keys(parent[parentKey].children).length === 0) {
+                delete parent[parentKey].children;
+            }
+            
+            // 부모의 형제로 추가 (부모 바로 뒤에)
+            const parentKeys = Object.keys(parent);
+            const parentIndex = parentKeys.indexOf(parentKey);
+            
+            const newParent = {};
+            let inserted = false;
+            parentKeys.forEach((key, index) => {
+                newParent[key] = parent[key];
+                if (index === parentIndex && !inserted) {
+                    // 새 키 생성 (기존 키 유지)
+                    newParent[currentKey] = chapterData;
+                    inserted = true;
+                }
+            });
+            
+            // 부모 레벨이 최상위인지 확인
+            if (parts.length === 2) {
+                // 최상위 레벨 재구성
+                Object.keys(tableOfContents).forEach(key => delete tableOfContents[key]);
+                Object.assign(tableOfContents, newParent);
+            } else {
+                // 상위 레벨 찾아서 업데이트
+                let grandParent = tableOfContents;
+                for (let i = 0; i < parts.length - 3; i++) {
+                    grandParent = grandParent[parts[i]].children;
+                }
+                grandParent[parts[parts.length - 3]].children = newParent;
+            }
+            
+            saveTOCToLocalStorage();
+            renderChapterTreeWithActions();
+            showMessage('레벨을 올렸습니다.', false);
         }
 
         // 레벨 내리기 (형제 → 자식)
         function changeLevelDown(chapterId) {
             console.log('레벨 내리기:', chapterId);
-            showMessage('레벨 내리기 기능은 개발 중입니다.', false);
-            // TODO: 구현 필요
+            
+            const parts = chapterId.split('-');
+            const lastKey = parts[parts.length - 1];
+            
+            // 현재 챕터 데이터 가져오기
+            const chapter = getChapterById(chapterId);
+            if (!chapter) {
+                showMessage('챕터를 찾을 수 없습니다.', true);
+                return;
+            }
+            
+            // 부모 객체와 현재 레벨의 키들 찾기
+            let parent, currentLevel, parentKeys;
+            
+            if (parts.length === 1) {
+                // 최상위 레벨
+                currentLevel = tableOfContents;
+                parentKeys = Object.keys(tableOfContents);
+            } else {
+                // 하위 레벨
+                parent = tableOfContents;
+                for (let i = 0; i < parts.length - 1; i++) {
+                    if (!parent[parts[i]]) return;
+                    parent = parent[parts[i]];
+                }
+                
+                if (!parent.children) return;
+                currentLevel = parent.children;
+                parentKeys = Object.keys(currentLevel);
+            }
+            
+            const currentIndex = parentKeys.indexOf(lastKey);
+            
+            if (currentIndex <= 0) {
+                showMessage('첫 번째 항목은 레벨을 내릴 수 없습니다.', true);
+                return;
+            }
+            
+            // 바로 위 형제
+            const prevKey = parentKeys[currentIndex - 1];
+            const prevSibling = currentLevel[prevKey];
+            
+            // 챕터 데이터 복사 (깊은 복사)
+            const chapterData = JSON.parse(JSON.stringify(chapter));
+            
+            // 현재 위치에서 삭제
+            delete currentLevel[lastKey];
+            
+            // 바로 위 형제의 children으로 추가
+            if (!prevSibling.children) {
+                prevSibling.children = {};
+            }
+            
+            // 새 키 생성 (자식들의 마지막 번호 + 1)
+            const childKeys = Object.keys(prevSibling.children);
+            let newKey = lastKey;
+            
+            // 키 중복 방지
+            if (prevSibling.children[newKey]) {
+                let counter = 1;
+                while (prevSibling.children[newKey + '-' + counter]) {
+                    counter++;
+                }
+                newKey = newKey + '-' + counter;
+            }
+            
+            prevSibling.children[newKey] = chapterData;
+            
+            saveTOCToLocalStorage();
+            renderChapterTreeWithActions();
+            showMessage('레벨을 내렸습니다.', false);
         }
 
         // 제목 수정

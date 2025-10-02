@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>제목 저장 테스트</title>
+    <style>
+        body {
+            font-family: 'Malgun Gothic', sans-serif;
+            padding: 40px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .test-section {
+            background: #f5f5f5;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn-primary { background: #4CAF50; color: white; }
+        .btn-secondary { background: #2196F3; color: white; }
+        .btn-danger { background: #f44336; color: white; }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        #log {
+            background: #000;
+            color: #0f0;
+            padding: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 20px;
+            border-radius: 5px;
+        }
+        .log-entry {
+            margin: 5px 0;
+            padding: 3px 0;
+        }
+        .log-success { color: #0f0; }
+        .log-error { color: #f00; }
+        .log-info { color: #ff0; }
+    </style>
+</head>
+<body>
+    <h1>🧪 제목 저장 기능 테스트</h1>
+    
+    <div class="test-section">
+        <h2>1단계: 데이터 구조 확인</h2>
+        <button class="btn-secondary" onclick="testStep1()">테스트 실행</button>
+    </div>
+
+    <div class="test-section">
+        <h2>2단계: 챕터 제목 가져오기</h2>
+        <input type="text" id="testChapterId" placeholder="챕터 ID 입력 (예: prologue-p1)" value="prologue-p1">
+        <button class="btn-secondary" onclick="testStep2()">테스트 실행</button>
+    </div>
+
+    <div class="test-section">
+        <h2>3단계: 챕터 제목 변경</h2>
+        <input type="text" id="newTitle" placeholder="새 제목 입력" value="테스트 제목 123">
+        <button class="btn-primary" onclick="testStep3()">제목 변경 테스트</button>
+    </div>
+
+    <div class="test-section">
+        <h2>4단계: localStorage 저장/로드</h2>
+        <button class="btn-primary" onclick="testStep4Save()">저장 테스트</button>
+        <button class="btn-secondary" onclick="testStep4Load()">로드 테스트</button>
+        <button class="btn-danger" onclick="testStep4Clear()">localStorage 지우기</button>
+    </div>
+
+    <div id="log"></div>
+
+    <!-- TOC Manager 로드 -->
+    <script src="toc-manager.js"></script>
+    
+    <script>
+        // 로그 출력 함수
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(message);
+        }
+
+        // 테스트용 목차 데이터 (간소화)
+        window.tableOfContents = {
+            "prologue": {
+                title: "프롤로그: 인류의 숙명, 예측에 대한 갈망",
+                children: {
+                    "p1": { title: "왜 우리는 예측하려 하는가?" },
+                    "p2": { title: "예측의 본능: 생존과 번영을 위한 인류의 역사" }
+                }
+            },
+            "part1": {
+                title: "제1부. '역사주'의 근간: 음양오행, 변화하는 에너지",
+                children: {
+                    "1": { title: "무극에서 음양으로: 모든 것의 시작" }
+                }
+            }
+        };
+
+        window.currentChapterId = "prologue-p1";
+
+        // 1단계: 데이터 구조 확인
+        function testStep1() {
+            log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", 'info');
+            log("1단계: 데이터 구조 확인", 'info');
+            log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", 'info');
+            
+            log("tableOfContents 존재: " + !!window.tableOfContents, 
+                window.tableOfContents ? 'success' : 'error');
+            
+            log("TOCManager 존재: " + !!window.TOCManager, 
+                window.TOCManager ? 'success' : 'error');
+            
+            log("currentChapterId: " + window.currentChapterId, 'info');
+            
+            log("목차 구조:", 'info');
+            log(JSON.stringify(window.tableOfContents, null, 2), 'info');
+        }
+
+        // 2단계: 챕터 제목 가져오기
+        function testStep2() {
+            const chapterId = document.getElementById('testChapterId').value;
+            
+            log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", 'info');
+            log("2단계: 챕터 제목 가져오기", 'info');
+            log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", 'info');
+            log("챕터 ID: " + chapterId, 'info');
+            
+            if (!window.TOCManager) {
+                log("❌ TOCManager를 찾을 수 없습니다!", 'error');
+                return;
+            }
+            
+            const title = window.TOCManager.getChapterTitle(chapterId);
+            log("가져온 제목: " + title, title ? 'success' : 'error');
+            
+            if (!title) {
+                log("⚠️ 제목을 가져오지 못했습니다. ID를 확인하세요.", 'error');
+            }
+        }
+
+        // 3단계: 챕터 제목 변경
+        function testStep3() {
+            const chapterId = document.getElementById('testChapterId').value;
+            const newTitle = document.getElementById('newTitle').value;
+            
+            log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", 'info');
+            log("3단계: 챕터 제목 변경", 'info');
+            log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", 'info');
+            log("챕터 ID: " + chapterId, 'info');
+            log("새 제목: " + newTitle, 'info');
+            
+            // 변경 전 제목
+            const oldTitle = window.TOCManager.getChapterTitle(chapterId);
+            log("변경 전 제목: " + oldTitle, 'info');
+            
+            // 제목 변경
+            const success = window.TOCManager.updateChapterTitle(chapterId, newTitle);
+            log("updateChapterTitle 결과: " + success, success ? 'success' : 'error');
+            
+            // 변경 후 제목 확인
+            const updatedTitle = window.TOCManager.getChapterTitle(chapterId);
+            log("변경 후 제목: " + updatedTitle, 'info');
+            
+            if (updatedTitle === newTitle) {
+                log("✅ 제목이 성공적으로 변경되었습니다!", 'success');
+            } else {
+                log("❌ 제목 변경 실패!", 'error');
+            }
+        }
+
+        // 4단계: localStorage 저장
+        function testStep4Save() {
+            log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", 'info');
+            log("4단계: localStorage 저장", 'info');
+            log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", 'info');
+            
+            window.TOCManager.saveTOCToLocalStorage();
+            log("✅ localStorage에 저장 완료", 'success');
+            
+            // 저장된 데이터 확인
+            const saved = localStorage.getItem('tableOfContents');
+            log("저장된 데이터 크기: " + (saved ? saved.length : 0) + " bytes", 'info');
+        }
+
+        // 4단계: localStorage 로드
+        function testStep4Load() {
+            log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", 'info');
+            log("4단계: localStorage 로드", 'info');
+            log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", 'info');
+            
+            const success = window.TOCManager.loadTOCFromLocalStorage();
+            log("로드 결과: " + success, success ? 'success' : 'error');
+            
+            // 로드 후 제목 확인
+            const chapterId = document.getElementById('testChapterId').value;
+            const title = window.TOCManager.getChapterTitle(chapterId);
+            log("로드 후 " + chapterId + " 제목: " + title, 'info');
+        }
+
+        // 4단계: localStorage 지우기
+        function testStep4Clear() {
+            localStorage.removeItem('tableOfContents');
+            log("✅ localStorage 데이터 삭제 완료", 'success');
+        }
+
+        // 페이지 로드 시 자동 실행
+        window.addEventListener('DOMContentLoaded', () => {
+            log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", 'success');
+            log("🧪 제목 저장 기능 테스트 페이지 로드 완료", 'success');
+            log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", 'success');
+            log("각 단계별 테스트 버튼을 클릭하세요.", 'info');
+        });
+    </script>
+</body>
+</html>
