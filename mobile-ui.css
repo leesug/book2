@@ -1,0 +1,304 @@
+/* ============================================
+   모바일 반응형 UI 스타일
+   ============================================ */
+
+/* 모바일 헤더 (상단 고정 바) */
+.mobile-header {
+    display: none; /* 기본적으로 숨김 */
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    z-index: 1000;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    align-items: center;
+    padding: 0 15px;
+    justify-content: space-between;
+}
+
+.mobile-header-title {
+    font-size: 16px;
+    font-weight: 600;
+    flex: 1;
+    text-align: center;
+}
+
+.mobile-menu-btn {
+    width: 45px;
+    height: 45px;
+    border: none;
+    background: rgba(255,255,255,0.2);
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    transition: all 0.3s;
+}
+
+.mobile-menu-btn:active {
+    background: rgba(255,255,255,0.3);
+    transform: scale(0.95);
+}
+
+/* 슬라이드 패널 공통 스타일 */
+.slide-panel {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    width: 80%;
+    max-width: 320px;
+    background: white;
+    z-index: 1001;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    overflow-y: auto;
+    box-shadow: 2px 0 10px rgba(0,0,0,0.3);
+}
+
+.slide-panel.active {
+    transform: translateX(0);
+}
+
+/* 목차 슬라이드 패널 (왼쪽) */
+.slide-panel-left {
+    left: 0;
+}
+
+/* 가이드 슬라이드 패널 (오른쪽) */
+.slide-panel-right {
+    right: 0;
+    left: auto;
+    transform: translateX(100%);
+}
+
+.slide-panel-right.active {
+    transform: translateX(0);
+}
+
+/* 패널 헤더 */
+.slide-panel-header {
+    position: sticky;
+    top: 0;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 10;
+}
+
+.slide-panel-header h2 {
+    font-size: 18px;
+    margin: 0;
+}
+
+.slide-panel-close {
+    width: 35px;
+    height: 35px;
+    border: none;
+    background: rgba(255,255,255,0.2);
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 20px;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.slide-panel-close:active {
+    background: rgba(255,255,255,0.3);
+    transform: scale(0.9);
+}
+
+/* 패널 내용 */
+.slide-panel-content {
+    padding: 20px 15px;
+}
+
+/* 오버레이 (배경 어둡게) */
+.slide-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 999;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.slide-overlay.active {
+    display: block;
+    opacity: 1;
+}
+
+/* ============================================
+   미디어 쿼리: 모바일 (768px 이하)
+   ============================================ */
+@media (max-width: 768px) {
+    /* 모바일 헤더 표시 */
+    .mobile-header {
+        display: flex;
+    }
+
+    /* 기존 진행률 바 숨김 */
+    .progress-bar-container {
+        display: none;
+    }
+
+    /* 컨테이너 조정 */
+    .container {
+        height: calc(100vh - 60px);
+        margin-top: 60px;
+        flex-direction: column;
+    }
+
+    /* 기존 사이드바 숨김 */
+    .sidebar {
+        display: none;
+    }
+
+    /* 오른쪽 가이드 영역 숨김 */
+    .guide-panel {
+        display: none;
+    }
+
+    /* 편집 영역 전체 화면 */
+    .content {
+        width: 100% !important;
+        max-width: 100% !important;
+        padding: 15px;
+    }
+
+    /* 편집기 툴바 간소화 */
+    .editor-toolbar {
+        flex-wrap: wrap;
+        padding: 10px;
+        gap: 5px;
+    }
+
+    .toolbar-group {
+        margin-right: 5px;
+    }
+
+    .toolbar-btn {
+        padding: 8px 10px;
+        font-size: 14px;
+        min-width: auto;
+    }
+
+    .toolbar-separator {
+        margin: 0 5px;
+    }
+
+    /* 제목 입력 필드 */
+    #chapterTitleInput {
+        font-size: 18px;
+        padding: 12px;
+    }
+
+    /* 편집기 */
+    #editor {
+        font-size: 16px;
+        line-height: 1.8;
+        padding: 15px;
+    }
+
+    /* 저장 버튼 */
+    .save-btn-container {
+        padding: 15px;
+    }
+
+    .save-btn {
+        width: 100%;
+        font-size: 16px;
+        padding: 15px;
+    }
+
+    /* 목차 관리 버튼들 모바일 최적화 */
+    .chapter-actions {
+        flex-wrap: wrap;
+        gap: 3px;
+    }
+
+    .chapter-action-btn {
+        font-size: 11px;
+        padding: 3px 6px;
+    }
+
+    /* 새 챕터 추가 UI */
+    .add-chapter-container input,
+    .add-chapter-container select,
+    .add-chapter-container button {
+        font-size: 14px;
+        padding: 10px;
+    }
+}
+
+/* ============================================
+   미디어 쿼리: 작은 모바일 (480px 이하)
+   ============================================ */
+@media (max-width: 480px) {
+    .mobile-header-title {
+        font-size: 14px;
+    }
+
+    .slide-panel {
+        width: 90%;
+        max-width: none;
+    }
+
+    .slide-panel-header h2 {
+        font-size: 16px;
+    }
+
+    .toolbar-btn {
+        padding: 6px 8px;
+        font-size: 12px;
+    }
+
+    #editor {
+        font-size: 15px;
+        padding: 10px;
+    }
+}
+
+/* ============================================
+   애니메이션 효과
+   ============================================ */
+@keyframes slideInLeft {
+    from {
+        transform: translateX(-100%);
+    }
+    to {
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+    }
+    to {
+        transform: translateX(0);
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}

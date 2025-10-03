@@ -888,12 +888,83 @@
             background: #e0e0e0;
         }
 
+
+        /* 알림 애니메이션 */
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+            }
+            to {
+                opacity: 0;
+            }
+        }
+
     </style>
+    
+    <!-- 모바일 반응형 CSS -->
+    <link rel="stylesheet" href="mobile-ui.css">
+
     <!-- 목차 관리 시스템 -->
     <script src="toc-manager.js"></script>
+    
+    <!-- 모바일 UI 제어 스크립트 -->
+    <script src="mobile-ui.js"></script>
+    
+    <!-- 음성 → 텍스트 변환 -->
+    <script src="voice-to-text.js"></script>
+
+
 
 </head>
 <body>
+    
+    <!-- 모바일 헤더 (768px 이하에서만 표시) -->
+    <div class="mobile-header">
+        <button class="mobile-menu-btn" id="mobileTocBtn" title="목차 열기">
+            📋
+        </button>
+        <div class="mobile-header-title">자유의지 예측</div>
+        <button class="mobile-menu-btn" id="mobileGuideBtn" title="가이드 열기">
+            📝
+        </button>
+    </div>
+
+    <!-- 오버레이 (패널 열릴 때 배경) -->
+    <div class="slide-overlay" id="slideOverlay"></div>
+
+    <!-- 목차 슬라이드 패널 (왼쪽) -->
+    <div class="slide-panel slide-panel-left" id="tocSlidePanel">
+        <div class="slide-panel-header">
+            <h2>📖 목차</h2>
+            <button class="slide-panel-close" id="tocPanelClose">✕</button>
+        </div>
+        <div class="slide-panel-content" id="tocPanelContent">
+            <!-- JavaScript로 목차 내용이 복사됩니다 -->
+        </div>
+    </div>
+
+    <!-- 가이드 슬라이드 패널 (오른쪽) -->
+    <div class="slide-panel slide-panel-right" id="guideSlidePanel">
+        <div class="slide-panel-header">
+            <h2>📝 글쓰기 가이드</h2>
+            <button class="slide-panel-close" id="guidePanelClose">✕</button>
+        </div>
+        <div class="slide-panel-content" id="guidePanelContent">
+            <!-- JavaScript로 가이드 내용이 복사됩니다 -->
+        </div>
+    </div>
+
     <!-- 진행률 상태 바 -->
     <div class="progress-bar-container">
         <div class="progress-info">

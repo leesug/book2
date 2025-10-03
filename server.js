@@ -343,6 +343,125 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
     }
 });
 
+// =================================================================
+// Phase 6: 음성 → 텍스트 변환 API (OpenAI Whisper)
+// =================================================================
+
+/**
+ * 음성 파일을 텍스트로 변환
+ * POST /api/transcribe
+ * Content-Type: multipart/form-data
+ * Body: { audio: File (WAV, MP3, M4A 등) }
+ */
+app.post('/api/transcribe', upload.single('audio'), async (req, res) => {
+    console.log('\n🎤 [음성 변환] 요청 받음');
+    
+    try {
+        // OpenAI API 키 확인
+        if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY === 'your-openai-api-key-here') {
+            console.error('❌ OpenAI API 키가 설정되지 않음');
+            return res.status(500).json({
+                success: false,
+                message: 'OpenAI API 키가 설정되지 않았습니다. .env 파일에 OPENAI_API_KEY를 추가해주세요.'
+            });
+        }
+        
+        // 업로드된 파일 확인
+        if (!req.file) {
+            console.error('❌ 파일이 업로드되지 않음');
+            return res.status(400).json({
+                success: false,
+                message: '음성 파일이 업로드되지 않았습니다.'
+            });
+        }
+        
+        const { originalname, mimetype, buffer, size } = req.file;
+        console.log('📁 파일 정보:');
+        console.log('  - 파일명:', originalname);
+        console.log('  - MIME 타입:', mimetype);
+        console.log('  - 크기:', (size / 1024 / 1024).toFixed(2), 'MB');
+        
+        // 파일 형식 검증
+        const allowedTypes = [
+            'audio/wav', 'audio/x-wav',
+            'audio/mpeg', 'audio/mp3',
+            'audio/mp4', 'audio/m4a',
+            'audio/webm', 'audio/ogg'
+        ];
+        
+        if (!allowedTypes.includes(mimetype) && !originalname.match(/\.(wav|mp3|m4a|webm|ogg)$/i)) {
+            console.error('❌ 지원하지 않는 파일 형식:', mimetype);
+            return res.status(400).json({
+                success: false,
+                message: '지원하지 않는 파일 형식입니다. WAV, MP3, M4A 파일만 지원됩니다.'
+            });
+        }
+        
+        // 파일 크기 제한 (25MB - OpenAI Whisper 제한)
+        const maxSize = 25 * 1024 * 1024; // 25MB
+        if (size > maxSize) {
+            console.error('❌ 파일 크기 초과:', (size / 1024 / 1024).toFixed(2), 'MB');
+            return res.status(400).json({
+                success: false,
+                message: `파일 크기가 너무 큽니다. 최대 25MB까지 지원됩니다. (현재: ${(size / 1024 / 1024).toFixed(2)}MB)`
+            });
+        }
+        
+        // OpenAI Whisper API 호출
+        console.log('🔄 OpenAI Whisper API 호출 중...');
+        const OpenAI = require('openai');
+        const openai = new OpenAI({
+            apiKey: process.env.OPENAI_API_KEY
+        });
+        
+        // 임시 파일로 저장 (OpenAI API는 File 객체 필요)
+        const tempFilePath = path.join(UPLOADS_DIR, `temp_${Date.now()}_${originalname}`);
+        fs.writeFileSync(tempFilePath, buffer);
+        
+        try {
+            // Whisper API 호출
+            const transcription = await openai.audio.transcriptions.create({
+                file: fs.createReadStream(tempFilePath),
+                model: 'whisper-1',
+                language: 'ko', // 한국어 지정
+                response_format: 'json'
+            });
+            
+            // 임시 파일 삭제
+            fs.unlinkSync(tempFilePath);
+            
+            const transcribedText = transcription.text;
+            console.log('✅ 음성 변환 완료!');
+            console.log('📝 변환된 텍스트:', transcribedText.substring(0, 100) + (transcribedText.length > 100 ? '...' : ''));
+            
+            // 성공 응답
+            return res.json({
+                success: true,
+                text: transcribedText,
+                duration: transcription.duration || null,
+                language: transcription.language || 'ko'
+            });
+            
+        } catch (apiError) {
+            // 임시 파일 삭제
+            if (fs.existsSync(tempFilePath)) {
+                fs.unlinkSync(tempFilePath);
+            }
+            throw apiError;
+        }
+        
+    } catch (error) {
+        console.error('❌ [음성 변환] 오류 발생:', error);
+        return res.status(500).json({
+            success: false,
+            message: '음성 변환 중 오류가 발생했습니다.',
+            error: error.message
+        });
+    }
+});
+
+
+
 // 서버 시작
 app.listen(PORT, () => {
     console.log(`\n✅ 서버가 http://localhost:${PORT} 에서 실행 중입니다.`);
