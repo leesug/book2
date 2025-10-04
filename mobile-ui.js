@@ -48,20 +48,191 @@ class MobileUI {
     copyTocContent() {
         const chapterTree = document.getElementById('chapterTree');
         const tocPanelContent = document.getElementById('tocPanelContent');
+        const tocManageBtn = document.getElementById('tocManageBtn');
+        const addChapterArea = document.getElementById('addChapterArea');
+        const collapseAllBtn = document.getElementById('collapseAllBtn');
         
         if (!chapterTree || !tocPanelContent) {
             console.error('[MobileUI] 목차 영역을 찾을 수 없습니다.');
             return;
         }
         
+        // 패널 초기화
+        tocPanelContent.innerHTML = '';
+        
+        // 목차 관리 버튼 복사
+        if (tocManageBtn) {
+            const clonedManageBtn = tocManageBtn.cloneNode(true);
+            clonedManageBtn.id = 'mobileTocManageBtn';
+            clonedManageBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('[MobileUI] 목차 관리 버튼 클릭');
+                tocManageBtn.click();
+                setTimeout(() => {
+                    console.log('[MobileUI] 목차 관리 모드 전환 후 패널 업데이트');
+                    this.copyTocContent();
+                }, 200);
+            });
+            tocPanelContent.appendChild(clonedManageBtn);
+        }
+        
+        // 새 챕터 추가 영역 복사 (관리 모드일 때만 보임)
+        if (addChapterArea) {
+            const clonedAddArea = addChapterArea.cloneNode(true);
+            clonedAddArea.id = 'mobileAddChapterArea';
+            tocPanelContent.appendChild(clonedAddArea);
+        }
+        
+        // 모두 접기 버튼 복사
+        if (collapseAllBtn) {
+            const btnContainer = document.createElement('div');
+            btnContainer.style.cssText = 'margin-bottom: 15px; text-align: right;';
+            const clonedCollapseBtn = collapseAllBtn.cloneNode(true);
+            clonedCollapseBtn.id = 'mobileCollapseAllBtn';
+            
+            // 모두 접기/펼치기 기능 직접 구현
+            clonedCollapseBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const mobileTree = document.getElementById('mobileChapterTree');
+                if (!mobileTree) return;
+                
+                const allToggleBtns = mobileTree.querySelectorAll('.toggle-btn');
+                const allSubChapters = mobileTree.querySelectorAll('.sub-chapter');
+                
+                // 현재 상태 확인 (하나라도 expanded면 모두 접기)
+                const hasExpanded = Array.from(allToggleBtns).some(btn => 
+                    btn.classList.contains('expanded')
+                );
+                
+                if (hasExpanded) {
+                    // 모두 접기
+                    allToggleBtns.forEach(btn => {
+                        btn.classList.remove('expanded');
+                        btn.classList.add('collapsed');
+                    });
+                    allSubChapters.forEach(sub => {
+                        sub.style.maxHeight = '0';
+                        sub.style.opacity = '0';
+                    });
+                    clonedCollapseBtn.textContent = '+ 모두 펼치기';
+                } else {
+                    // 모두 펼치기
+                    allToggleBtns.forEach(btn => {
+                        btn.classList.remove('collapsed');
+                        btn.classList.add('expanded');
+                    });
+                    allSubChapters.forEach(sub => {
+                        sub.style.maxHeight = '5000px';
+                        sub.style.opacity = '1';
+                    });
+                    clonedCollapseBtn.textContent = '− 모두 접기';
+                }
+            });
+            
+            btnContainer.appendChild(clonedCollapseBtn);
+            tocPanelContent.appendChild(btnContainer);
+        }
+        
         // chapter-tree의 내용을 복제
         const clonedTree = chapterTree.cloneNode(true);
+        clonedTree.id = 'mobileChapterTree';
         
         // 패널에 삽입
-        tocPanelContent.innerHTML = '<ul class="chapter-tree" style="list-style: none; padding: 0;"></ul>';
-        tocPanelContent.querySelector('.chapter-tree').replaceWith(clonedTree);
+        tocPanelContent.appendChild(clonedTree);
+        
+        // 복사된 목차에 이벤트 직접 연결
+        this.attachMobileTocEvents(clonedTree);
         
         console.log('[MobileUI] 목차 내용 복사 완료:', clonedTree.children.length, '개 항목');
+    }
+    
+    /**
+     * 모바일 목차에 이벤트 연결
+     */
+    attachMobileTocEvents(treeElement) {
+        // 1. 모든 토글 버튼에 이벤트 연결
+        const toggleBtns = treeElement.querySelectorAll('.toggle-btn');
+        toggleBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const chapterItem = btn.closest('.chapter-item');
+                if (!chapterItem) return;
+                
+                const subChapter = chapterItem.querySelector('.sub-chapter');
+                if (!subChapter) return;
+                
+                const isExpanded = btn.classList.contains('expanded');
+                
+                if (isExpanded) {
+                    // 접기
+                    btn.classList.remove('expanded');
+                    btn.classList.add('collapsed');
+                    subChapter.style.maxHeight = '0';
+                    subChapter.style.opacity = '0';
+                } else {
+                    // 펼치기
+                    btn.classList.remove('collapsed');
+                    btn.classList.add('expanded');
+                    subChapter.style.maxHeight = '5000px';
+                    subChapter.style.opacity = '1';
+                }
+            });
+        });
+        
+        // 2. 모든 목차 링크에 이벤트 연결
+        const chapterLinks = treeElement.querySelectorAll('.chapter-link');
+        chapterLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const chapterId = link.getAttribute('data-id');
+                if (!chapterId) return;
+                
+                console.log('[MobileUI] 목차 클릭:', chapterId);
+                
+                // 원본 링크 찾아서 클릭
+                const originalLink = document.querySelector(`.sidebar .chapter-link[data-id="${chapterId}"]`);
+                if (originalLink) {
+                    originalLink.click();
+                }
+                
+                // 패널 닫기
+                setTimeout(() => this.closeTocPanel(), 300);
+            });
+        });
+        
+        // 3. 모든 액션 버튼에 이벤트 연결 (목차 관리 모드)
+        const actionBtns = treeElement.querySelectorAll('.chapter-action-btn');
+        actionBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const action = btn.getAttribute('data-action');
+                const chapterId = btn.getAttribute('data-id');
+                
+                if (!action || !chapterId) return;
+                
+                console.log('[MobileUI] 액션 버튼 클릭:', action, chapterId);
+                
+                // 원본 버튼 찾아서 클릭
+                const originalBtn = document.querySelector(
+                    `.sidebar .chapter-action-btn[data-action="${action}"][data-id="${chapterId}"]`
+                );
+                
+                if (originalBtn) {
+                    originalBtn.click();
+                    // 목차 업데이트
+                    setTimeout(() => this.refreshTocContent(), 300);
+                }
+            });
+        });
     }
 
     /**
@@ -129,9 +300,6 @@ class MobileUI {
                 this.closeAllPanels();
             }
         });
-
-        // 목차 항목 클릭 시 패널 자동 닫기
-        this.setupTocAutoClose();
     }
 
     /**
@@ -221,42 +389,11 @@ class MobileUI {
     }
 
     /**
-     * 목차 항목 클릭 시 자동 닫기 설정
+     * 목차 항목 클릭 시 자동 닫기 설정 (Deprecated - attachMobileTocEvents에서 처리)
      */
     setupTocAutoClose() {
-        const tocPanelContent = document.getElementById('tocPanelContent');
-        
-        if (!tocPanelContent) return;
-        
-        // 이벤트 위임을 통한 클릭 처리
-        tocPanelContent.addEventListener('click', (e) => {
-            // chapter-link 클릭 시
-            if (e.target.classList.contains('chapter-link')) {
-                e.preventDefault(); // 기본 동작 방지
-                
-                // 클릭된 챕터 ID 가져오기
-                const chapterId = e.target.getAttribute('data-id');
-                
-                if (chapterId) {
-                    // 원본 sidebar의 해당 항목 클릭 (실제 로드 수행)
-                    const originalLink = document.querySelector(`.sidebar .chapter-link[data-id="${chapterId}"]`);
-                    if (originalLink) {
-                        originalLink.click();
-                    }
-                    
-                    // 짧은 지연 후 패널 닫기
-                    setTimeout(() => {
-                        this.closeTocPanel();
-                    }, 300);
-                }
-            }
-            
-            // 토글 버튼 클릭 시 (하위 목차 펼치기/접기)
-            if (e.target.classList.contains('toggle-btn')) {
-                // 토글은 그대로 작동하도록 허용
-                // 패널은 닫지 않음
-            }
-        });
+        // 이 함수는 더 이상 사용하지 않습니다.
+        // 모든 이벤트는 attachMobileTocEvents에서 처리됩니다.
     }
 
     /**

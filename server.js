@@ -252,7 +252,7 @@ HTML 형식으로 위와 같은 구조로 답변해주세요.`;
                 'anthropic-version': '2023-06-01'
             },
             body: JSON.stringify({
-                model: 'claude-sonnet-4-20250514',
+                model: 'claude-3-5-sonnet-20241022',  // 최신 Claude 3.5 Sonnet 모델
                 max_tokens: 2500,
                 messages: [{
                     role: 'user',

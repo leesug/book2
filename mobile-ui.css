@@ -123,6 +123,107 @@
     padding: 20px 15px;
 }
 
+/* 슬라이드 패널 내 목차 관리 버튼 */
+.slide-panel-content .toc-manage-btn {
+    width: 100%;
+    margin-bottom: 15px;
+}
+
+/* 슬라이드 패널 내 새 챕터 추가 영역 */
+.slide-panel-content .add-chapter-area {
+    margin-bottom: 15px;
+}
+
+/* 슬라이드 패널 내 목차 트리 */
+.slide-panel-content .chapter-tree {
+    list-style: none;
+    padding: 0;
+}
+
+.slide-panel-content .chapter-item {
+    margin: 5px 0;
+}
+
+.slide-panel-content .chapter-link {
+    display: block;
+    padding: 10px 12px;
+    text-decoration: none;
+    color: #333;
+    border-radius: 5px;
+    transition: all 0.2s;
+    cursor: pointer;
+    font-size: 14px;
+    background: #f9f9f9;
+    margin-bottom: 5px;
+}
+
+.slide-panel-content .chapter-link:active {
+    background: #4CAF50;
+    color: white;
+}
+
+.slide-panel-content .chapter-link.active {
+    background: #4CAF50;
+    color: white;
+}
+
+.slide-panel-content .chapter-link.has-content {
+    font-weight: 600;
+    color: #4CAF50;
+}
+
+.slide-panel-content .chapter-link.has-content.active {
+    color: white;
+}
+
+.slide-panel-content .sub-chapter {
+    margin-left: 20px;
+    border-left: 2px solid #e0e0e0;
+    padding-left: 10px;
+}
+
+.slide-panel-content .toggle-btn {
+    width: 20px;
+    height: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+    color: #666;
+    background: transparent;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    transition: all 0.2s;
+    margin-right: 5px;
+}
+
+.slide-panel-content .toggle-btn:active {
+    background: #e0e0e0;
+}
+
+/* 목차 관리 액션 버튼들 */
+.slide-panel-content .chapter-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+    margin-top: 5px;
+}
+
+.slide-panel-content .chapter-action-btn {
+    font-size: 10px;
+    padding: 2px 5px;
+    border: 1px solid #ddd;
+    background: white;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+.slide-panel-content .chapter-action-btn:active {
+    background: #f0f0f0;
+}
+
 /* 오버레이 (배경 어둡게) */
 .slide-overlay {
     display: none;
@@ -143,9 +244,9 @@
 }
 
 /* ============================================
-   미디어 쿼리: 모바일 (768px 이하)
+   미디어 쿼리: 모바일/태블릿 (1024px 이하)
    ============================================ */
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
     /* 모바일 헤더 표시 */
     .mobile-header {
         display: flex;
@@ -177,41 +278,82 @@
     .content {
         width: 100% !important;
         max-width: 100% !important;
-        padding: 15px;
+        padding: 10px !important;
+        overflow-x: hidden !important;
+        overflow-y: auto !important;
+    }
+    
+    /* 메인 콘텐츠 영역 */
+    .main-content {
+        width: 100% !important;
+        overflow-x: hidden !important;
     }
 
     /* 편집기 툴바 간소화 */
-    .editor-toolbar {
-        flex-wrap: wrap;
-        padding: 10px;
-        gap: 5px;
+    .toolbar {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        padding: 8px 5px !important;
+        gap: 5px !important;
+        overflow: visible !important;
+        overflow-x: visible !important;
+        overflow-y: visible !important;
+        white-space: normal !important;
+        max-width: 100% !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
     }
 
     .toolbar-group {
-        margin-right: 5px;
+        display: flex !important;
+        flex-wrap: wrap !important;
+        margin-right: 0 !important;
+        margin-bottom: 5px !important;
+        gap: 3px !important;
+        flex-shrink: 1 !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+    }
+    
+    /* 툴바 라벨 숨김 (모바일) */
+    .toolbar-group-label {
+        display: none !important;
     }
 
-    .toolbar-btn {
-        padding: 8px 10px;
-        font-size: 14px;
-        min-width: auto;
+    .toolbar button {
+        padding: 8px 10px !important;
+        font-size: 12px !important;
+        min-width: auto !important;
+        white-space: nowrap !important;
+        flex-shrink: 1 !important;
+        margin: 2px !important;
     }
 
     .toolbar-separator {
-        margin: 0 5px;
+        display: none !important;
     }
 
     /* 제목 입력 필드 */
     #chapterTitleInput {
-        font-size: 18px;
-        padding: 12px;
+        font-size: 16px !important;
+        padding: 10px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+    }
+    
+    /* 콘텐츠 헤더 */
+    .content-header {
+        padding: 10px 0 !important;
     }
 
     /* 편집기 */
     #editor {
-        font-size: 16px;
-        line-height: 1.8;
-        padding: 15px;
+        font-size: 15px !important;
+        line-height: 1.7 !important;
+        padding: 10px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+        min-height: 300px !important;
     }
 
     /* 저장 버튼 */
@@ -262,9 +404,15 @@
         font-size: 16px;
     }
 
-    .toolbar-btn {
-        padding: 6px 8px;
-        font-size: 12px;
+    .toolbar button {
+        padding: 6px 8px !important;
+        font-size: 11px !important;
+        margin: 2px !important;
+        flex-shrink: 1 !important;
+    }
+
+    .toolbar-group {
+        margin-bottom: 5px !important;
     }
 
     #editor {

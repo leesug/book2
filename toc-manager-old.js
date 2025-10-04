@@ -68,7 +68,7 @@ function buildChapterMap() {
 
 
 /**
- * 챕터 ID로 제목 가져오기 (맵 방식)
+ * 챕터 ID로 제목 가져오기 (경로 파싱 방식)
  * @param {string} chapterId - 챕터 ID (예: "prologue", "prologue-p1", "part1-1-1")
  * @returns {string} 챕터 제목
  */
@@ -90,7 +90,7 @@ function getChapterTitle(chapterId) {
 }
 
 /**
- * 제목 업데이트 (tableOfContents 객체 수정) - 맵 방식
+ * 제목 업데이트 (tableOfContents 객체 수정) - 경로 파싱 방식
  * @param {string} chapterId - 챕터 ID (예: "prologue", "prologue-p1", "part1-1-1")
  * @param {string} newTitle - 새 제목
  * @returns {boolean} 성공 여부
@@ -105,29 +105,37 @@ function updateChapterTitle(chapterId, newTitle) {
         return false;
     }
     
-    // 맵이 비어있으면 빌드
-    if (!window.chapterMap || Object.keys(window.chapterMap).length === 0) {
-        buildChapterMap();
+    // '-'로 분리하여 경로 탐색
+    const parts = chapterId.split('-');
+    let current = window.tableOfContents;
+    
+    for (let i = 0; i < parts.length; i++) {
+        const key = parts[i];
+        
+        if (!current[key]) {
+            console.error(`❌ 챕터를 찾을 수 없음: ${chapterId} (${key})`);
+            return false;
+        }
+        
+        // 마지막 부분이면 제목 업데이트
+        if (i === parts.length - 1) {
+            console.log(`  - 제목 업데이트 위치 찾음!`);
+            console.log(`  - 이전 제목: "${current[key].title}"`);
+            current[key].title = newTitle;
+            console.log(`  - 새 제목: "${current[key].title}"`);
+            console.log(`✅ 제목 업데이트 성공: ${chapterId} → "${newTitle}"`);
+            return true;
+        }
+        
+        // 다음 레벨의 children으로 이동
+        if (!current[key].children) {
+            console.error(`❌ children이 없음: ${chapterId} (${key})`);
+            return false;
+        }
+        current = current[key].children;
     }
     
-    // 맵에서 챕터 찾기
-    const chapterInfo = window.chapterMap[chapterId];
-    if (!chapterInfo || !chapterInfo.ref) {
-        console.error(`❌ 챕터를 찾을 수 없음: ${chapterId}`);
-        return false;
-    }
-    
-    // 제목 업데이트
-    console.log(`  - 제목 업데이트 위치 찾음!`);
-    console.log(`  - 이전 제목: "${chapterInfo.ref.title}"`);
-    chapterInfo.ref.title = newTitle;
-    console.log(`  - 새 제목: "${chapterInfo.ref.title}"`);
-    console.log(`✅ 제목 업데이트 성공: ${chapterId} → "${newTitle}"`);
-    
-    // 맵도 업데이트
-    chapterInfo.title = newTitle;
-    
-    return true;
+    return false;
 }
 
 /**
