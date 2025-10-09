@@ -474,15 +474,20 @@ app.post('/api/transcribe', upload.single('audio'), async (req, res) => {
 
 
 
-// 서버 시작
-app.listen(PORT, () => {
-    console.log(`\n✅ 서버가 http://localhost:${PORT} 에서 실행 중입니다.`);
-    console.log(`🌐 브라우저에서 http://localhost:${PORT}/index.html 을 열어주세요.`);
-    console.log(`📦 Supabase 연결: ${process.env.SUPABASE_URL ? '✅ 성공' : '❌ 실패'}`);
-    console.log(`🤖 AI 가이드 기능: ${hasAnthropicKey ? '✅ 활성화' : '❌ 비활성화 (API 키 필요)'}`);
-    if (!hasAnthropicKey) {
-        console.log(`⚠️  AI 가이드 기능을 사용하려면 ANTHROPIC_API_KEY 환경변수를 설정하세요.`);
-        console.log(`   자세한 내용: API_KEY_SETUP.md 파일 참고`);
-    }
-    console.log('');
-});
+// 서버 시작 (로컬 환경에서만)
+if (!process.env.VERCEL) {
+    app.listen(PORT, () => {
+        console.log(`\n✅ 서버가 http://localhost:${PORT} 에서 실행 중입니다.`);
+        console.log(`🌐 브라우저에서 http://localhost:${PORT}/index.html 을 열어주세요.`);
+        console.log(`📦 Supabase 연결: ${process.env.SUPABASE_URL ? '✅ 성공' : '❌ 실패'}`);
+        console.log(`🤖 AI 가이드 기능: ${hasAnthropicKey ? '✅ 활성화' : '❌ 비활성화 (API 키 필요)'}`);
+        if (!hasAnthropicKey) {
+            console.log(`⚠️  AI 가이드 기능을 사용하려면 ANTHROPIC_API_KEY 환경변수를 설정하세요.`);
+            console.log(`   자세한 내용: API_KEY_SETUP.md 파일 참고`);
+        }
+        console.log('');
+    });
+}
+
+// Vercel을 위한 export
+module.exports = app;
