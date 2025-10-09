@@ -11,11 +11,17 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const DATA_DIR = __dirname;
 const DATA_FILE = path.join(DATA_DIR, 'data.json');
-const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
+
+// Vercel 환경에서는 /tmp 사용, 로컬에서는 ./uploads 사용
+const UPLOADS_DIR = process.env.VERCEL 
+    ? '/tmp/uploads' 
+    : path.join(DATA_DIR, 'uploads');
 
 // 환경변수 확인 및 로깅
 console.log('🔍 환경변수 체크:');
 console.log('- PORT:', PORT);
+console.log('- UPLOADS_DIR:', UPLOADS_DIR);
+console.log('- IS_VERCEL:', process.env.VERCEL ? 'Yes' : 'No');
 console.log('- SUPABASE_URL:', process.env.SUPABASE_URL ? '✅ 설정됨' : '❌ 없음');
 console.log('- SUPABASE_KEY:', process.env.SUPABASE_KEY ? '✅ 설정됨' : '❌ 없음');
 console.log('- ANTHROPIC_API_KEY:', process.env.ANTHROPIC_API_KEY ? '✅ 설정됨' : '❌ 없음');
@@ -29,9 +35,15 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.static(__dirname));
 app.use('/uploads', express.static(UPLOADS_DIR));
 
-// uploads 폴더가 없으면 생성 (로컬 백업용)
-if (!fs.existsSync(UPLOADS_DIR)) {
-    fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+// uploads 폴더가 없으면 생성 (Vercel 환경 대응)
+try {
+    if (!fs.existsSync(UPLOADS_DIR)) {
+        fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+        console.log('✅ 업로드 디렉터리 생성됨:', UPLOADS_DIR);
+    }
+} catch (error) {
+    console.warn('⚠️ 업로드 디렉터리 생성 실패 (무시됨):', error.message);
+    // Vercel에서는 /tmp가 자동 생성되므로 에러 무시
 }
 
 // 파일 업로드 설정 - 메모리 저장 (Supabase Storage 업로드용)
