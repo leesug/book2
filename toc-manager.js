@@ -99,35 +99,98 @@ function updateChapterTitle(chapterId, newTitle) {
     console.log('🔧 updateChapterTitle 시작');
     console.log('  - chapterId:', chapterId);
     console.log('  - newTitle:', newTitle);
-    
+
     if (!chapterId || !newTitle || !window.tableOfContents) {
         console.error('❌ 유효하지 않은 입력:', {chapterId, newTitle, hasTableOfContents: !!window.tableOfContents});
         return false;
     }
-    
+
     // 맵이 비어있으면 빌드
     if (!window.chapterMap || Object.keys(window.chapterMap).length === 0) {
+        console.log('  - chapterMap이 비어있음. 빌드 중...');
         buildChapterMap();
     }
-    
+
+    console.log('  - chapterMap 키 목록:', Object.keys(window.chapterMap));
+    console.log('  - chapterMap에서 찾기:', chapterId);
+
     // 맵에서 챕터 찾기
     const chapterInfo = window.chapterMap[chapterId];
     if (!chapterInfo || !chapterInfo.ref) {
         console.error(`❌ 챕터를 찾을 수 없음: ${chapterId}`);
+        console.error('  - 사용 가능한 키:', Object.keys(window.chapterMap));
+
+        // 직접 tableOfContents에서 찾아보기 (fallback)
+        console.log('  - 대체 방법: tableOfContents에서 직접 검색');
+        const chapter = findChapterById(chapterId);
+        if (chapter) {
+            console.log('  - tableOfContents에서 찾음!');
+            chapter.title = newTitle;
+            console.log(`✅ 제목 업데이트 성공 (대체 방법): ${chapterId} → "${newTitle}"`);
+
+            // 맵 재생성
+            buildChapterMap();
+            return true;
+        }
+
         return false;
     }
-    
+
     // 제목 업데이트
     console.log(`  - 제목 업데이트 위치 찾음!`);
     console.log(`  - 이전 제목: "${chapterInfo.ref.title}"`);
     chapterInfo.ref.title = newTitle;
     console.log(`  - 새 제목: "${chapterInfo.ref.title}"`);
     console.log(`✅ 제목 업데이트 성공: ${chapterId} → "${newTitle}"`);
-    
+
     // 맵도 업데이트
     chapterInfo.title = newTitle;
-    
+
     return true;
+}
+
+/**
+ * tableOfContents에서 직접 챕터 찾기 (fallback)
+ * @param {string} chapterId - 챕터 ID
+ * @returns {Object|null} 챕터 객체 또는 null
+ */
+function findChapterById(chapterId) {
+    if (!window.tableOfContents) return null;
+
+    console.log('🔍 findChapterById 시작:', chapterId);
+    const parts = chapterId.split('-');
+    console.log('  - 분할된 parts:', parts);
+
+    let current = window.tableOfContents;
+
+    for (let i = 0; i < parts.length; i++) {
+        const part = parts[i];
+        console.log(`  - 현재 part [${i}]:`, part);
+
+        if (i === 0) {
+            // 최상위 레벨 (예: "prologue", "part1")
+            if (current[part]) {
+                current = current[part];
+                console.log('    → 최상위 레벨에서 찾음');
+            } else {
+                console.log('    → 찾을 수 없음');
+                return null;
+            }
+        } else {
+            // 하위 레벨 (children 내부)
+            if (current.children && current.children[part]) {
+                current = current.children[part];
+                console.log('    → children에서 찾음');
+            } else {
+                console.log('    → children에서 찾을 수 없음');
+                console.log('    → current.children:', current.children);
+                return null;
+            }
+        }
+    }
+
+    console.log('✅ 챕터 찾기 성공:', current);
+    return current;
 }
 
 /**
@@ -316,6 +379,8 @@ if (document.readyState === 'loading') {
 window.TOCManager = {
     getChapterTitle,
     updateChapterTitle,
+    findChapterById,
+    buildChapterMap,
     previewTitleChange,
     saveTOCToLocalStorage,
     loadTOCFromLocalStorage,

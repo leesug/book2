@@ -1714,15 +1714,28 @@
 
         // 편집 모드 진입
         function enterEditMode(data) {
+            console.log('🟡 enterEditMode 호출됨');
+            console.log('  - currentChapterId:', currentChapterId);
+
             isEditMode = true;
             originalContent = data.content;
-            
+
             document.getElementById('editBtn').style.display = 'none';
             document.getElementById('saveBtn').style.display = 'inline-block';
             document.getElementById('cancelBtn').style.display = 'inline-block';
 
+            // 제목 편집 필드 생성 (toc-manager.js)
+            let titleEditorHTML = '';
+            if (window.TOCManager && typeof window.TOCManager.createTitleEditorHTML === 'function') {
+                titleEditorHTML = window.TOCManager.createTitleEditorHTML(currentChapterId);
+                console.log('  - 제목 편집 필드 생성됨');
+            } else {
+                console.warn('⚠️ TOCManager.createTitleEditorHTML를 찾을 수 없습니다!');
+            }
+
             const editorArea = document.getElementById('editorArea');
             editorArea.innerHTML = `
+                ${titleEditorHTML}
                 <div class="toolbar">
                     <!-- 텍스트 스타일 그룹 -->
                     <div class="toolbar-group">
@@ -1760,6 +1773,7 @@
                 ${renderAttachments(data.attachments || [], true)}
             `;
 
+            console.log('✅ 편집 모드 UI 생성 완료');
             // 드래그드롭 제거됨 (사용자 요청)
         }
 
@@ -2171,14 +2185,38 @@
 
         // 저장
         async function saveContent() {
+            console.log('🔵 saveContent 함수 호출됨');
+            console.log('  - currentChapterId:', currentChapterId);
+
             const editor = document.getElementById('contentEditor');
+            console.log('  - editor 존재:', !!editor);
+
+            if (!editor) {
+                console.error('❌ contentEditor를 찾을 수 없습니다!');
+                showMessage('편집기를 찾을 수 없습니다.', true);
+                return;
+            }
+
             // contenteditable div인 경우 innerHTML, textarea인 경우 value 사용
             const content = editor.contentEditable === 'true' ? editor.innerHTML : editor.value;
-            
+            console.log('  - content 길이:', content?.length || 0);
+
+            // 1. 챕터 제목 저장 (toc-manager.js)
+            console.log('🔵 제목 저장 시도...');
+            if (window.TOCManager && typeof window.TOCManager.saveChapterTitle === 'function') {
+                const titleSaved = window.TOCManager.saveChapterTitle(currentChapterId);
+                console.log('  - 제목 저장 결과:', titleSaved);
+            } else {
+                console.warn('⚠️ TOCManager.saveChapterTitle를 찾을 수 없습니다!');
+            }
+
+            console.log('🔵 챕터 데이터 조회 중...');
             const response = await fetch(`/api/chapters/${currentChapterId}`);
             const currentData = await response.json();
+            console.log('  - 현재 데이터:', currentData);
 
             try {
+                console.log('🔵 서버에 저장 요청 중...');
                 const saveResponse = await fetch(`/api/chapters/${currentChapterId}`, {
                     method: 'POST',
                     headers: {
@@ -2191,17 +2229,20 @@
                 });
 
                 const result = await saveResponse.json();
-                
+                console.log('  - 서버 응답:', result);
+
                 if (result.success) {
+                    console.log('✅ 저장 성공!');
                     showMessage('저장되었습니다.');
                     await loadChapterData();
                     renderChapterTree();
                     await loadChapterContent(currentChapterId);
                 } else {
+                    console.error('❌ 저장 실패:', result);
                     showMessage('저장에 실패했습니다.', true);
                 }
             } catch (error) {
-                console.error('저장 실패:', error);
+                console.error('❌ 저장 중 오류:', error);
                 showMessage('저장에 실패했습니다.', true);
             }
         }
@@ -2356,7 +2397,11 @@
             enterEditMode(data);
         });
 
-        document.getElementById('saveBtn').addEventListener('click', saveContent);
+        document.getElementById('saveBtn').addEventListener('click', function() {
+            console.log('🟢 저장 버튼 클릭됨!');
+            saveContent();
+        });
+
         document.getElementById('cancelBtn').addEventListener('click', cancelEdit);
 
 
