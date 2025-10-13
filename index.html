@@ -1434,23 +1434,27 @@
 
         // 진행률 UI 업데이트
         function updateProgress() {
+            console.log('📊 updateProgress 호출됨');
             const progress = calculateProgress();
+            console.log('  - 계산된 진행률:', progress);
 
-            document.getElementById('pagesWritten').textContent = 
+            document.getElementById('pagesWritten').textContent =
                 `${progress.pagesWritten} / ${progress.totalPages} 페이지`;
-            
-            document.getElementById('chaptersCompleted').textContent = 
+
+            document.getElementById('chaptersCompleted').textContent =
                 `${progress.completedChapters} / ${progress.totalChapters} 챕터`;
-            
+
             // 총 글자수 표시 (천 단위 쉼표 추가)
-            document.getElementById('totalChars').textContent = 
+            document.getElementById('totalChars').textContent =
                 `${progress.totalChars.toLocaleString()} / 337,500 자`;
-            
-            document.getElementById('progressPercentage').textContent = 
+
+            document.getElementById('progressPercentage').textContent =
                 `${progress.percentage}%`;
-            
+
             const fillElement = document.getElementById('progressBarFill');
             fillElement.style.width = `${progress.percentage}%`;
+
+            console.log('✅ 진행률 UI 업데이트 완료');
             
             // 진행률에 따른 색상 변경
             const percentage = parseFloat(progress.percentage);
@@ -2235,6 +2239,7 @@
                     console.log('✅ 저장 성공!');
                     showMessage('저장되었습니다.');
                     await loadChapterData();
+                    updateProgress(); // 진행률 업데이트
                     renderChapterTree();
                     await loadChapterContent(currentChapterId);
                 } else {
