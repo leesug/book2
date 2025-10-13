@@ -106,9 +106,15 @@ function updateChapterTitle(chapterId, newTitle) {
     }
 
     // 맵이 비어있으면 빌드
-    if (!window.chapterMap || Object.keys(window.chapterMap).length === 0) {
+    if (!window.chapterMap || Object.keys(window.chapterMap || {}).length === 0) {
         console.log('  - chapterMap이 비어있음. 빌드 중...');
         buildChapterMap();
+    }
+
+    // buildChapterMap 후에도 undefined일 수 있으므로 안전하게 처리
+    if (!window.chapterMap) {
+        console.error('❌ chapterMap 생성 실패!');
+        window.chapterMap = {};
     }
 
     console.log('  - chapterMap 키 목록:', Object.keys(window.chapterMap));
