@@ -288,10 +288,88 @@
             margin: 0;
         }
 
+        .guide-header-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .btn-toggle-guide {
+            background: #9E9E9E;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background 0.3s;
+        }
+
+        .btn-toggle-guide:hover {
+            background: #757575;
+        }
+
+        .guide-content.hidden {
+            display: none;
+        }
+
         .guide-content {
             line-height: 1.8;
             font-size: 14px;
             color: #555;
+        }
+
+        .guide-history-nav {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px;
+            background: #f0f0f0;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+
+        .guide-history-nav button {
+            background: white;
+            border: 1px solid #ddd;
+            padding: 5px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+
+        .guide-history-nav button:hover:not(:disabled) {
+            background: #4CAF50;
+            color: white;
+            border-color: #4CAF50;
+        }
+
+        .guide-history-nav button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .guide-version-info {
+            flex: 1;
+            text-align: center;
+            font-size: 13px;
+            color: #666;
+            font-weight: 500;
+        }
+
+        .guide-version-badge {
+            display: inline-block;
+            background: #4CAF50;
+            color: white;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            margin-left: 6px;
+        }
+
+        .guide-version-badge.old {
+            background: #999;
         }
 
         .guide-content h4 {
@@ -1049,9 +1127,25 @@
         <!-- 글쓰기 가이드 패널 -->
         <div class="guide-panel" id="guidePanel">
             <div class="guide-header">
-                <h3>✍️ 글쓰기 가이드</h3>
-                <button class="btn-guide" id="regenerateGuideBtn" onclick="regenerateGuide()">🔄 재가이드 생성</button>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <h3>✍️ 글쓰기 가이드</h3>
+                    <span id="guideProgressIndicator" style="font-size: 11px; color: #999; display: none;">생성 중...</span>
+                </div>
+                <div class="guide-header-actions">
+                    <button class="btn-toggle-guide" id="toggleGuideBtn" onclick="toggleGuideContent()">숨기기</button>
+                    <button class="btn-guide" id="regenerateGuideBtn" onclick="regenerateGuide()">🔄 새가이드</button>
+                </div>
             </div>
+
+            <!-- 가이드 히스토리 네비게이션 -->
+            <div class="guide-history-nav" id="guideHistoryNav" style="display: none;">
+                <button id="guidePrevBtn" onclick="navigateGuidePrev()">◀ 이전</button>
+                <div class="guide-version-info">
+                    <span id="guideVersionText">가이드 없음</span>
+                </div>
+                <button id="guideNextBtn" onclick="navigateGuideNext()">다음 ▶</button>
+            </div>
+
             <div class="guide-content" id="guideContent">
                 <p style="color: #999; text-align: center; padding: 40px 20px;">챕터를 선택하면 글쓰기 가이드가 표시됩니다.</p>
             </div>
@@ -2271,14 +2365,144 @@
             }, 3000);
         }
 
-        // 가이드 패널 표시
+        // 가이드 패널 표시/숨기기
         function showGuidePanel() {
             document.getElementById('guidePanel').classList.add('active');
         }
 
-        // 가이드 생성
-        async function generateGuide(chapterId, existingContent = '') {
+        function hideGuidePanel() {
+            document.getElementById('guidePanel').classList.remove('active');
+        }
+
+        function toggleGuidePanel() {
+            const panel = document.getElementById('guidePanel');
+            panel.classList.toggle('active');
+        }
+
+        // 가이드 내용만 토글 (숨기기/보이기)
+        function toggleGuideContent() {
             const guideContent = document.getElementById('guideContent');
+            const toggleBtn = document.getElementById('toggleGuideBtn');
+
+            if (guideContent.classList.contains('hidden')) {
+                guideContent.classList.remove('hidden');
+                toggleBtn.textContent = '숨기기';
+            } else {
+                guideContent.classList.add('hidden');
+                toggleBtn.textContent = '보이기';
+            }
+        }
+
+        // 가이드 히스토리 네비게이션 업데이트
+        function updateGuideHistoryNav() {
+            const nav = document.getElementById('guideHistoryNav');
+            const versionText = document.getElementById('guideVersionText');
+            const prevBtn = document.getElementById('guidePrevBtn');
+            const nextBtn = document.getElementById('guideNextBtn');
+
+            if (!currentChapterId || !chapterData[currentChapterId]) {
+                nav.style.display = 'none';
+                return;
+            }
+
+            const history = chapterData[currentChapterId].guideHistory || [];
+            const currentVersion = chapterData[currentChapterId].currentGuideVersion || 0;
+
+            if (history.length === 0) {
+                nav.style.display = 'none';
+                return;
+            }
+
+            nav.style.display = 'flex';
+
+            // 버전 텍스트 업데이트
+            const isLatest = currentVersion === history.length - 1;
+            const versionNumber = currentVersion + 1;
+            const totalVersions = history.length;
+
+            let badgeClass = isLatest ? '' : 'old';
+            let badgeText = isLatest ? '최신' : '이전';
+
+            versionText.innerHTML = `
+                가이드 ${versionNumber} / ${totalVersions}
+                <span class="guide-version-badge ${badgeClass}">${badgeText}</span>
+            `;
+
+            // 버튼 활성화/비활성화
+            prevBtn.disabled = currentVersion === 0;
+            nextBtn.disabled = currentVersion === history.length - 1;
+        }
+
+        // 이전 가이드로 이동
+        function navigateGuidePrev() {
+            if (!currentChapterId || !chapterData[currentChapterId]) return;
+
+            const currentVersion = chapterData[currentChapterId].currentGuideVersion || 0;
+            if (currentVersion > 0) {
+                chapterData[currentChapterId].currentGuideVersion = currentVersion - 1;
+                displayCurrentGuide();
+            }
+        }
+
+        // 다음 가이드로 이동
+        function navigateGuideNext() {
+            if (!currentChapterId || !chapterData[currentChapterId]) return;
+
+            const history = chapterData[currentChapterId].guideHistory || [];
+            const currentVersion = chapterData[currentChapterId].currentGuideVersion || 0;
+
+            if (currentVersion < history.length - 1) {
+                chapterData[currentChapterId].currentGuideVersion = currentVersion + 1;
+                displayCurrentGuide();
+            }
+        }
+
+        // 현재 버전의 가이드 표시
+        function displayCurrentGuide() {
+            if (!currentChapterId || !chapterData[currentChapterId]) return;
+
+            const guideContent = document.getElementById('guideContent');
+            const history = chapterData[currentChapterId].guideHistory || [];
+            const currentVersion = chapterData[currentChapterId].currentGuideVersion || 0;
+
+            if (history.length === 0) {
+                guideContent.innerHTML = '<p style="color: #999; text-align: center; padding: 40px 20px;">아직 생성된 가이드가 없습니다.</p>';
+                updateGuideHistoryNav();
+                return;
+            }
+
+            const guide = history[currentVersion];
+            if (guide && guide.content) {
+                guideContent.innerHTML = guide.content;
+            } else {
+                guideContent.innerHTML = '<p style="color: #999; text-align: center; padding: 40px 20px;">가이드 내용을 불러올 수 없습니다.</p>';
+            }
+
+            updateGuideHistoryNav();
+
+            // 모바일 가이드 업데이트
+            if (window.mobileUI && window.mobileUI.isInitialized) {
+                setTimeout(() => window.mobileUI.refreshGuideContent(), 100);
+            }
+        }
+
+        // 가이드 생성
+        async function generateGuide(chapterId, existingContent = '', forceRegenerate = false) {
+            const guideContent = document.getElementById('guideContent');
+            const progressIndicator = document.getElementById('guideProgressIndicator');
+
+            // 이미 가이드가 있고 강제 재생성이 아니면 기존 가이드 로드
+            if (!forceRegenerate && chapterData[chapterId]?.guideHistory?.length > 0) {
+                displayCurrentGuide();
+                return;
+            }
+
+            // 진행 상태 표시
+            if (progressIndicator) {
+                progressIndicator.style.display = 'inline';
+                progressIndicator.textContent = '생성 중...';
+            }
+
             guideContent.innerHTML = '<div class="guide-loading">AI가 글쓰기 가이드를 생성하고 있습니다</div>';
 
             try {
@@ -2308,10 +2532,24 @@
                 });
 
                 const data = await response.json();
-                
+
                 if (data.success && data.guide) {
-                    guideContent.innerHTML = data.guide;
+                    // 진행 상태 숨기기
+                    if (progressIndicator) {
+                        progressIndicator.style.display = 'none';
+                    }
+
+                    // 가이드를 챕터 데이터와 함께 저장 (히스토리에 추가)
+                    await saveGuideToServer(chapterId, data.guide);
+
+                    // 최신 가이드 표시
+                    displayCurrentGuide();
                 } else {
+                    // 진행 상태 숨기기
+                    if (progressIndicator) {
+                        progressIndicator.style.display = 'none';
+                    }
+
                     guideContent.innerHTML = `<p style="color: #f44336;">가이드 생성에 실패했습니다.</p>
                     <p style="font-size: 12px; color: #999; margin-top: 10px;">
                         ※ AI 가이드 기능을 사용하려면 Anthropic API 키가 필요합니다.<br>
@@ -2321,10 +2559,68 @@
                 }
             } catch (error) {
                 console.error('가이드 생성 실패:', error);
+
+                // 진행 상태 숨기기
+                if (progressIndicator) {
+                    progressIndicator.style.display = 'none';
+                }
+
                 guideContent.innerHTML = `<p style="color: #f44336;">가이드 생성 중 오류가 발생했습니다.</p>
                 <p style="font-size: 12px; color: #999; margin-top: 10px;">
                     서버 연결을 확인해주세요.
                 </p>`;
+            }
+        }
+
+        // 가이드를 서버에 저장 (히스토리에 추가)
+        async function saveGuideToServer(chapterId, guide) {
+            try {
+                // 현재 챕터 데이터 가져오기
+                const response = await fetch(`/api/chapters/${chapterId}`);
+                const currentData = await response.json();
+
+                // 로컬 데이터 초기화
+                if (!chapterData[chapterId]) {
+                    chapterData[chapterId] = {
+                        content: currentData.content || '',
+                        attachments: currentData.attachments || [],
+                        guideHistory: currentData.guideHistory || [],
+                        currentGuideVersion: currentData.currentGuideVersion || 0
+                    };
+                }
+
+                // 가이드 히스토리에 새 가이드 추가
+                const newGuideEntry = {
+                    content: guide,
+                    created_at: new Date().toISOString(),
+                    version: chapterData[chapterId].guideHistory.length
+                };
+
+                chapterData[chapterId].guideHistory.push(newGuideEntry);
+                chapterData[chapterId].currentGuideVersion = chapterData[chapterId].guideHistory.length - 1;
+                chapterData[chapterId].guide = guide; // 하위 호환성
+
+                // 서버에 저장
+                const saveResponse = await fetch(`/api/chapters/${chapterId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        content: currentData.content || '',
+                        attachments: currentData.attachments || [],
+                        guide: guide,
+                        guideHistory: chapterData[chapterId].guideHistory,
+                        currentGuideVersion: chapterData[chapterId].currentGuideVersion
+                    })
+                });
+
+                const result = await saveResponse.json();
+                if (result.success) {
+                    console.log('✅ 가이드가 히스토리에 추가되었습니다.');
+                }
+            } catch (error) {
+                console.error('가이드 저장 실패:', error);
             }
         }
 
@@ -2363,7 +2659,7 @@
 
             const editor = document.getElementById('contentEditor');
             let currentContent = '';
-            
+
             if (editor) {
                 // 편집 모드인 경우
                 currentContent = editor.contentEditable === 'true' ? editor.innerHTML : editor.value;
@@ -2391,8 +2687,9 @@
             } else {
                 showMessage('챕터 제목과 목차를 기반으로 가이드를 생성하고 있습니다...');
             }
-            
-            await generateGuide(currentChapterId, textContent.trim());
+
+            // 강제 재생성 플래그 true로 설정
+            await generateGuide(currentChapterId, textContent.trim(), true);
         }
 
         // 버튼 이벤트 리스너

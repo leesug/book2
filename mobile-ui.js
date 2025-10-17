@@ -239,26 +239,94 @@ class MobileUI {
      * 가이드 내용을 슬라이드 패널에 복사
      */
     copyGuideContent() {
-        const guidePanel = document.getElementById('guidePanel');
+        const guideContent = document.getElementById('guideContent');
         const guidePanelContent = document.getElementById('guidePanelContent');
-        
-        if (!guidePanel || !guidePanelContent) {
+        const regenerateBtn = document.getElementById('regenerateGuideBtn');
+        const toggleBtn = document.getElementById('toggleGuideBtn');
+        const historyNav = document.getElementById('guideHistoryNav');
+
+        if (!guideContent || !guidePanelContent) {
             console.error('[MobileUI] 가이드 영역을 찾을 수 없습니다.');
             return;
         }
-        
-        // 가이드 패널의 내용을 복제하여 슬라이드 패널에 삽입
-        const clonedContent = guidePanel.cloneNode(true);
-        
-        // 클래스 제거 (스타일 충돌 방지)
-        clonedContent.className = '';
-        clonedContent.id = '';
-        
-        // 패널에 삽입
+
+        // 패널 초기화
         guidePanelContent.innerHTML = '';
+
+        // 버튼 영역 생성
+        const btnContainer = document.createElement('div');
+        btnContainer.style.cssText = 'margin-bottom: 15px; display: flex; gap: 8px; justify-content: flex-end;';
+
+        // 토글 버튼 복사
+        if (toggleBtn) {
+            const clonedToggleBtn = toggleBtn.cloneNode(true);
+            clonedToggleBtn.id = 'mobileToggleGuideBtn';
+            clonedToggleBtn.addEventListener('click', () => {
+                toggleBtn.click();
+                // 원본과 동기화
+                setTimeout(() => this.refreshGuideContent(), 100);
+            });
+            btnContainer.appendChild(clonedToggleBtn);
+        }
+
+        // 재가이드 버튼 복사
+        if (regenerateBtn) {
+            const clonedRegenBtn = regenerateBtn.cloneNode(true);
+            clonedRegenBtn.id = 'mobileRegenerateGuideBtn';
+            clonedRegenBtn.addEventListener('click', async () => {
+                regenerateBtn.click();
+                // 가이드 생성 후 업데이트
+                setTimeout(() => this.refreshGuideContent(), 2000);
+            });
+            btnContainer.appendChild(clonedRegenBtn);
+        }
+
+        guidePanelContent.appendChild(btnContainer);
+
+        // 가이드 히스토리 네비게이션 복사
+        if (historyNav && historyNav.style.display !== 'none') {
+            const clonedHistoryNav = historyNav.cloneNode(true);
+            clonedHistoryNav.id = 'mobileGuideHistoryNav';
+
+            // 이전 버튼 이벤트
+            const mobilePrevBtn = clonedHistoryNav.querySelector('button:first-of-type');
+            if (mobilePrevBtn) {
+                mobilePrevBtn.addEventListener('click', () => {
+                    window.navigateGuidePrev();
+                    setTimeout(() => this.refreshGuideContent(), 100);
+                });
+            }
+
+            // 다음 버튼 이벤트
+            const mobileNextBtn = clonedHistoryNav.querySelector('button:last-of-type');
+            if (mobileNextBtn) {
+                mobileNextBtn.addEventListener('click', () => {
+                    window.navigateGuideNext();
+                    setTimeout(() => this.refreshGuideContent(), 100);
+                });
+            }
+
+            guidePanelContent.appendChild(clonedHistoryNav);
+        }
+
+        // 가이드 내용 복제
+        const clonedContent = guideContent.cloneNode(true);
+        clonedContent.id = 'mobileGuideContent';
+
+        // 패널에 삽입
         guidePanelContent.appendChild(clonedContent);
-        
+
         console.log('[MobileUI] 가이드 내용 복사 완료');
+    }
+
+    /**
+     * 가이드 업데이트 (가이드 생성 후 호출)
+     */
+    refreshGuideContent() {
+        if (this.isInitialized) {
+            console.log('[MobileUI] 가이드 업데이트 중...');
+            this.copyGuideContent();
+        }
     }
 
     /**

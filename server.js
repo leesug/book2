@@ -76,6 +76,9 @@ app.get('/api/chapters', async (req, res) => {
             chapters[chapter.id] = {
                 content: chapter.content,
                 attachments: chapter.attachments,
+                guide: chapter.guide || null,
+                guideHistory: chapter.guide_history || [],
+                currentGuideVersion: chapter.current_guide_version || 0,
                 updatedAt: chapter.updated_at
             };
         });
@@ -104,10 +107,13 @@ app.get('/api/chapters/:id', async (req, res) => {
             res.json({
                 content: data.content,
                 attachments: data.attachments,
+                guide: data.guide || null,
+                guideHistory: data.guide_history || [],
+                currentGuideVersion: data.current_guide_version || 0,
                 updatedAt: data.updated_at
             });
         } else {
-            res.json({ content: '', attachments: [] });
+            res.json({ content: '', attachments: [], guide: null, guideHistory: [], currentGuideVersion: 0 });
         }
     } catch (error) {
         console.error('챕터 조회 오류:', error);
@@ -119,22 +125,36 @@ app.get('/api/chapters/:id', async (req, res) => {
 app.post('/api/chapters/:id', async (req, res) => {
     try {
         const chapterId = req.params.id;
-        const { content, attachments } = req.body;
-        
+        const { content, attachments, guide, guideHistory, currentGuideVersion } = req.body;
+
+        const updateData = {
+            id: chapterId,
+            content: content || '',
+            attachments: attachments || []
+        };
+
+        // guide_history와 current_guide_version이 제공된 경우에만 업데이트
+        if (guideHistory !== undefined) {
+            updateData.guide_history = guideHistory;
+        }
+        if (currentGuideVersion !== undefined) {
+            updateData.current_guide_version = currentGuideVersion;
+        }
+        // guide 필드는 하위 호환성을 위해 유지
+        if (guide !== undefined) {
+            updateData.guide = guide;
+        }
+
         // upsert: 존재하면 업데이트, 없으면 삽입
         const { data, error } = await supabase
             .from('chapters')
-            .upsert({
-                id: chapterId,
-                content: content || '',
-                attachments: attachments || []
-            }, {
+            .upsert(updateData, {
                 onConflict: 'id'
             })
             .select();
-        
+
         if (error) throw error;
-        
+
         res.json({ success: true, message: '저장되었습니다.' });
     } catch (error) {
         console.error('챕터 저장 오류:', error);
