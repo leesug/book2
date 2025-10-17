@@ -242,7 +242,6 @@ class MobileUI {
         const guideContent = document.getElementById('guideContent');
         const guidePanelContent = document.getElementById('guidePanelContent');
         const regenerateBtn = document.getElementById('regenerateGuideBtn');
-        const toggleBtn = document.getElementById('toggleGuideBtn');
         const historyNav = document.getElementById('guideHistoryNav');
 
         if (!guideContent || !guidePanelContent) {
@@ -253,23 +252,11 @@ class MobileUI {
         // 패널 초기화
         guidePanelContent.innerHTML = '';
 
-        // 버튼 영역 생성
+        // 새가이드 버튼 영역 생성
         const btnContainer = document.createElement('div');
         btnContainer.style.cssText = 'margin-bottom: 15px; display: flex; gap: 8px; justify-content: flex-end;';
 
-        // 토글 버튼 복사
-        if (toggleBtn) {
-            const clonedToggleBtn = toggleBtn.cloneNode(true);
-            clonedToggleBtn.id = 'mobileToggleGuideBtn';
-            clonedToggleBtn.addEventListener('click', () => {
-                toggleBtn.click();
-                // 원본과 동기화
-                setTimeout(() => this.refreshGuideContent(), 100);
-            });
-            btnContainer.appendChild(clonedToggleBtn);
-        }
-
-        // 재가이드 버튼 복사
+        // 새가이드 버튼 복사
         if (regenerateBtn) {
             const clonedRegenBtn = regenerateBtn.cloneNode(true);
             clonedRegenBtn.id = 'mobileRegenerateGuideBtn';

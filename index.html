@@ -294,25 +294,6 @@
             align-items: center;
         }
 
-        .btn-toggle-guide {
-            background: #9E9E9E;
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-            transition: background 0.3s;
-        }
-
-        .btn-toggle-guide:hover {
-            background: #757575;
-        }
-
-        .guide-content.hidden {
-            display: none;
-        }
-
         .guide-content {
             line-height: 1.8;
             font-size: 14px;
@@ -1132,7 +1113,6 @@
                     <span id="guideProgressIndicator" style="font-size: 11px; color: #999; display: none;">생성 중...</span>
                 </div>
                 <div class="guide-header-actions">
-                    <button class="btn-toggle-guide" id="toggleGuideBtn" onclick="toggleGuideContent()">숨기기</button>
                     <button class="btn-guide" id="regenerateGuideBtn" onclick="regenerateGuide()">🔄 새가이드</button>
                 </div>
             </div>
@@ -1147,7 +1127,11 @@
             </div>
 
             <div class="guide-content" id="guideContent">
-                <p style="color: #999; text-align: center; padding: 40px 20px;">챕터를 선택하면 글쓰기 가이드가 표시됩니다.</p>
+                <p style="color: #999; text-align: center; padding: 40px 20px;">
+                    챕터를 선택한 후<br>
+                    <strong>"🔄 새가이드"</strong> 버튼을 눌러<br>
+                    AI 글쓰기 가이드를 생성하세요.
+                </p>
             </div>
         </div>
     </div>
@@ -1718,10 +1702,25 @@
 
             // 챕터 데이터 로드
             await loadChapterContent(chapterId);
-            
-            // 가이드 패널 표시 및 가이드 생성
+
+            // 가이드 패널 표시 (가이드는 버튼을 눌러야 생성됨)
             showGuidePanel();
-            await generateGuide(chapterId);
+
+            // 이미 저장된 가이드가 있으면 표시
+            if (chapterData[chapterId]?.guideHistory?.length > 0) {
+                displayCurrentGuide();
+            } else {
+                // 가이드가 없으면 안내 메시지 표시
+                const guideContent = document.getElementById('guideContent');
+                guideContent.innerHTML = `
+                    <p style="color: #999; text-align: center; padding: 40px 20px;">
+                        <strong>"🔄 새가이드"</strong> 버튼을 눌러<br>
+                        AI 글쓰기 가이드를 생성하세요.
+                    </p>
+                `;
+                // 히스토리 네비게이션 숨기기
+                document.getElementById('guideHistoryNav').style.display = 'none';
+            }
         }
 
         // 챕터 내용 로드
@@ -2379,20 +2378,6 @@
             panel.classList.toggle('active');
         }
 
-        // 가이드 내용만 토글 (숨기기/보이기)
-        function toggleGuideContent() {
-            const guideContent = document.getElementById('guideContent');
-            const toggleBtn = document.getElementById('toggleGuideBtn');
-
-            if (guideContent.classList.contains('hidden')) {
-                guideContent.classList.remove('hidden');
-                toggleBtn.textContent = '숨기기';
-            } else {
-                guideContent.classList.add('hidden');
-                toggleBtn.textContent = '보이기';
-            }
-        }
-
         // 가이드 히스토리 네비게이션 업데이트
         function updateGuideHistoryNav() {
             const nav = document.getElementById('guideHistoryNav');
@@ -2486,16 +2471,10 @@
             }
         }
 
-        // 가이드 생성
-        async function generateGuide(chapterId, existingContent = '', forceRegenerate = false) {
+        // 가이드 생성 (항상 새로 생성)
+        async function generateGuide(chapterId, existingContent = '') {
             const guideContent = document.getElementById('guideContent');
             const progressIndicator = document.getElementById('guideProgressIndicator');
-
-            // 이미 가이드가 있고 강제 재생성이 아니면 기존 가이드 로드
-            if (!forceRegenerate && chapterData[chapterId]?.guideHistory?.length > 0) {
-                displayCurrentGuide();
-                return;
-            }
 
             // 진행 상태 표시
             if (progressIndicator) {
@@ -2650,7 +2629,7 @@
             return text;
         }
 
-        // 재가이드 생성
+        // 새가이드 생성
         async function regenerateGuide() {
             if (!currentChapterId) {
                 showMessage('챕터를 먼저 선택해주세요.', true);
@@ -2683,13 +2662,13 @@
             // 내용이 있으면: 내용 분석 + 보충/수정 제안
             // 내용이 없으면: 목차 기반 작성 가이드
             if (textContent.trim().length > 0) {
-                showMessage('작성된 내용을 분석하여 재가이드를 생성하고 있습니다...');
+                showMessage('작성된 내용을 분석하여 가이드를 생성하고 있습니다...');
             } else {
                 showMessage('챕터 제목과 목차를 기반으로 가이드를 생성하고 있습니다...');
             }
 
-            // 강제 재생성 플래그 true로 설정
-            await generateGuide(currentChapterId, textContent.trim(), true);
+            // 가이드 생성
+            await generateGuide(currentChapterId, textContent.trim());
         }
 
         // 버튼 이벤트 리스너
