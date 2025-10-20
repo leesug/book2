@@ -5,7 +5,12 @@
       "Bash(git add render.yaml)",
       "Bash(git commit -m \"Add Render auto-deployment configuration\n\n- Add render.yaml for automatic deployment from GitHub\n- Configure Node.js 22.14.0 environment\n- Set up auto-deploy on git push\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\")",
       "Bash(git push origin main)",
-      "Bash(git remote set-url origin git@github.com:leesug/book2.git)"
+      "Bash(git remote set-url origin git@github.com:leesug/book2.git)",
+      "Bash(git remote set-url origin https://github.com/leesug/book2.git)",
+      "Bash(git push origin main)",
+      "Bash(rm book2_token.md)",
+      "Bash(git add -A)",
+      "Bash(git commit --amend --no-edit)"
     ],
     "deny": [],
     "ask": []
